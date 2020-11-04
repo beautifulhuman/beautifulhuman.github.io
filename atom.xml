@@ -1,0 +1,2648 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Louis Li]]></title>
+  <link href="http://louisrli.github.io/atom.xml" rel="self"/>
+  <link href="http://louisrli.github.io/"/>
+  <updated>2020-10-09T20:20:45+01:00</updated>
+  <id>http://louisrli.github.io/</id>
+  <author>
+    <name><![CDATA[Louis Li]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Typesafe Unit Testing of GraphQL Resolvers in TypeScript]]></title>
+    <link href="http://louisrli.github.io/blog/2020/10/09/unit-testing-graphql-resolver-typescript/"/>
+    <updated>2020-10-09T00:00:00+01:00</updated>
+    <id>http://louisrli.github.io/blog/2020/10/09/unit-testing-graphql-resolver-typescript</id>
+    <content type="html"><![CDATA[<p>This post gives a code example on how to unit test a GraphQL resolver with Jest
+in TypeScript. In order to make the testing typesafe, we use <a href="https://graphql-code-generator.com/">GraphQL Code
+Generator</a>.</p>
+
+<!-- more -->
+
+<h2 id="description">Description</h2>
+
+<p>Unit testing GraphQL resolvers in TypeScript can be quite tricky to get right
+with the correct typing. This posts illustrates some example code of setting up
+calls directly to the resolvers.</p>
+
+<p>The code below here works with <a href="https://graphql-code-generator.com/">GraphQL Code
+Generator</a> to generate types for your
+resolvers. This article does not cover how to set up GraphQL Code Generator; it
+assumes that you have a working setup with your resolvers.</p>
+
+<p>Instead of writing raw GraphQL queries (which can be seen in <a href="./2020-10-09-unit-testing-graphql-middleware-typescript.md">my post about
+testing
+middlewares</a>), we
+show a typesafe way to unit test GraphQL resolvers. Much of this code is based
+off what was written in <a href="https://github.com/dotansimha/graphql-code-generator/issues/1763">graphql-code-generator issue #1763</a> by <a href="https://github.com/kamilkisiela">kamilkisiela</a>.</p>
+
+<h2 id="code">Code</h2>
+
+<div class="language-typescript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// You need to set up your resolvers using GraphQL Code Generator types. This</span>
+<span class="c1">// isn't in the scope of this article, so you'll have to check its</span>
+<span class="c1">// documentation.</span>
+
+<span class="c1">// You probably want to put these helpers in a common file such as testutils.ts</span>
+<span class="c1">// in order to use them between different test suites. You don't really need to</span>
+<span class="c1">// read the code below.</span>
+<span class="c1">//</span>
+<span class="c1">// The types below help us properly type mockedResolvers so we can write unit</span>
+<span class="c1">// tests that directly call resolvers from graphql-codegen. I took it from this</span>
+<span class="c1">// link below.</span>
+<span class="c1">// https://github.com/dotansimha/graphql-code-generator/issues/1763</span>
+<span class="kd">type</span> <span class="nx">MockResolverFn</span><span class="o">&lt;</span><span class="nx">TResult</span><span class="p">,</span> <span class="nx">TParent</span><span class="p">,</span> <span class="nx">TArgs</span><span class="p">,</span> <span class="nx">TCtx</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">(</span>
+  <span class="nx">parent</span><span class="p">?:</span> <span class="nx">TParent</span><span class="p">,</span>
+  <span class="nx">args</span><span class="p">?:</span> <span class="nx">TArgs</span><span class="p">,</span>
+  <span class="nx">context</span><span class="p">?:</span> <span class="nx">TCtx</span><span class="p">,</span>
+  <span class="nx">info</span><span class="p">?:</span> <span class="kr">any</span>
+<span class="p">)</span> <span class="o">=&gt;</span> <span class="nb">Promise</span><span class="o">&lt;</span><span class="nx">TResult</span><span class="o">&gt;</span> <span class="o">|</span> <span class="nx">TResult</span><span class="p">;</span>
+
+<span class="kd">type</span> <span class="nx">MockStitchingResolver</span><span class="o">&lt;</span><span class="nx">TResult</span><span class="p">,</span> <span class="nx">TParent</span><span class="p">,</span> <span class="nx">TArgs</span><span class="p">,</span> <span class="nx">TCtx</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">fragment</span><span class="p">:</span> <span class="kr">string</span><span class="p">;</span>
+  <span class="nl">resolve</span><span class="p">:</span> <span class="nx">MockResolverFn</span><span class="o">&lt;</span><span class="nx">TResult</span><span class="p">,</span> <span class="nx">TParent</span><span class="p">,</span> <span class="nx">TArgs</span><span class="p">,</span> <span class="nx">TCtx</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="k">export</span> <span class="kd">function</span> <span class="nx">mockResolver</span><span class="o">&lt;</span><span class="nx">TResult</span><span class="p">,</span> <span class="nx">TParent</span><span class="p">,</span> <span class="nx">TContext</span><span class="p">,</span> <span class="nx">TArgs</span><span class="o">&gt;</span><span class="p">(</span>
+  <span class="nx">resolver</span><span class="p">:</span> <span class="nx">Resolver</span><span class="o">&lt;</span><span class="nx">TResult</span><span class="p">,</span> <span class="nx">TParent</span><span class="p">,</span> <span class="nx">TContext</span><span class="p">,</span> <span class="nx">TArgs</span><span class="o">&gt;</span>
+<span class="p">):</span> <span class="nx">MockResolverFn</span><span class="o">&lt;</span><span class="nx">TResult</span><span class="p">,</span> <span class="nx">TParent</span><span class="p">,</span> <span class="nx">TArgs</span><span class="p">,</span> <span class="nx">TContext</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="k">export</span> <span class="kd">function</span> <span class="nx">mockResolver</span><span class="o">&lt;</span><span class="nx">TResult</span><span class="p">,</span> <span class="nx">TParent</span><span class="p">,</span> <span class="nx">TContext</span><span class="p">,</span> <span class="nx">TArgs</span><span class="o">&gt;</span><span class="p">(</span>
+  <span class="nx">resolver</span><span class="p">:</span> <span class="nx">Resolver</span><span class="o">&lt;</span><span class="nx">TResult</span><span class="p">,</span> <span class="nx">TParent</span><span class="p">,</span> <span class="nx">TContext</span><span class="p">,</span> <span class="nx">TArgs</span><span class="o">&gt;</span><span class="p">,</span>
+  <span class="nx">isStitching</span><span class="p">:</span> <span class="nx">boolean</span>
+<span class="p">):</span> <span class="nx">MockStitchingResolver</span><span class="o">&lt;</span><span class="nx">TResult</span><span class="p">,</span> <span class="nx">TParent</span><span class="p">,</span> <span class="nx">TArgs</span><span class="p">,</span> <span class="nx">TContext</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="k">export</span> <span class="kd">function</span> <span class="nx">mockResolver</span><span class="o">&lt;</span><span class="nx">TResult</span><span class="p">,</span> <span class="nx">TParent</span><span class="p">,</span> <span class="nx">TContext</span><span class="p">,</span> <span class="nx">TArgs</span><span class="o">&gt;</span><span class="p">(</span>
+  <span class="nx">resolver</span><span class="p">:</span> <span class="nx">Resolver</span><span class="o">&lt;</span><span class="nx">TResult</span><span class="p">,</span> <span class="nx">TParent</span><span class="p">,</span> <span class="nx">TContext</span><span class="p">,</span> <span class="nx">TArgs</span><span class="o">&gt;</span><span class="p">,</span>
+  <span class="nx">useStitching</span><span class="p">?:</span> <span class="nx">boolean</span>
+<span class="p">):</span>
+  <span class="o">|</span> <span class="nx">MockResolverFn</span><span class="o">&lt;</span><span class="nx">TResult</span><span class="p">,</span> <span class="nx">TParent</span><span class="p">,</span> <span class="nx">TArgs</span><span class="p">,</span> <span class="nx">TContext</span><span class="o">&gt;</span>
+  <span class="o">|</span> <span class="nx">MockStitchingResolver</span><span class="o">&lt;</span><span class="nx">TResult</span><span class="p">,</span> <span class="nx">TParent</span><span class="p">,</span> <span class="nx">TArgs</span><span class="p">,</span> <span class="nx">TContext</span><span class="o">&gt;</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span>
+    <span class="nx">isStitching</span><span class="o">&lt;</span><span class="nx">StitchingResolver</span><span class="o">&lt;</span><span class="nx">TResult</span><span class="p">,</span> <span class="nx">TParent</span><span class="p">,</span> <span class="nx">TContext</span><span class="p">,</span> <span class="nx">TArgs</span><span class="o">&gt;&gt;</span><span class="p">(</span>
+      <span class="nx">resolver</span><span class="p">,</span>
+      <span class="nx">useStitching</span> <span class="o">||</span> <span class="kc">false</span>
+    <span class="p">)</span>
+  <span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="p">{</span>
+      <span class="na">fragment</span><span class="p">:</span> <span class="nx">resolver</span><span class="p">.</span><span class="nx">fragment</span><span class="p">,</span>
+      <span class="na">resolve</span><span class="p">:</span> <span class="p">(</span><span class="nx">parent</span><span class="p">,</span> <span class="nx">args</span><span class="p">,</span> <span class="nx">context</span><span class="p">,</span> <span class="nx">info</span><span class="p">)</span> <span class="o">=&gt;</span>
+        <span class="nx">resolver</span><span class="p">.</span><span class="nx">resolve</span><span class="p">(</span><span class="nx">parent</span><span class="o">!</span><span class="p">,</span> <span class="nx">args</span><span class="o">!</span><span class="p">,</span> <span class="nx">context</span><span class="o">!</span><span class="p">,</span> <span class="nx">info</span><span class="o">!</span><span class="p">),</span>
+    <span class="p">};</span>
+  <span class="p">}</span>
+
+  <span class="k">return</span> <span class="p">(</span><span class="nx">parent</span><span class="p">,</span> <span class="nx">args</span><span class="p">,</span> <span class="nx">context</span><span class="p">,</span> <span class="nx">info</span><span class="p">)</span> <span class="o">=&gt;</span>
+    <span class="nx">resolver</span><span class="p">(</span><span class="nx">parent</span><span class="o">!</span><span class="p">,</span> <span class="nx">args</span><span class="o">!</span><span class="p">,</span> <span class="nx">context</span><span class="o">!</span><span class="p">,</span> <span class="nx">info</span><span class="o">!</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kd">function</span> <span class="nx">isStitching</span><span class="o">&lt;</span><span class="nx">T</span><span class="o">&gt;</span><span class="p">(</span><span class="nx">resolver</span><span class="p">:</span> <span class="kr">any</span><span class="p">,</span> <span class="nx">useStitching</span><span class="p">:</span> <span class="nx">boolean</span><span class="p">):</span> <span class="nx">resolver</span> <span class="k">is</span> <span class="nx">T</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nx">useStitching</span> <span class="o">===</span> <span class="kc">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+
+<span class="cm">/**
+ * In this example, we have an object called `signup` that has the
+ * `MutationResolvers` type from graphql-codegen.
+ */</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">signup</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">./signup</span><span class="dl">'</span><span class="p">;</span>
+
+<span class="c1">// Set up the parent and context args to your resolvers as appropriate, either</span>
+<span class="c1">// at the top or on a test-by-test basis.</span>
+<span class="kd">const</span> <span class="nx">RESOLVER_PARENT</span> <span class="o">=</span> <span class="p">{};</span>
+<span class="kd">const</span> <span class="nx">MOCK_CONTEXT</span> <span class="o">=</span> <span class="p">{};</span>
+
+<span class="nx">describe</span><span class="p">(</span><span class="dl">'</span><span class="s1">cancel signup works</span><span class="dl">'</span><span class="p">,</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">it</span><span class="p">(</span><span class="dl">'</span><span class="s1">tests for an exception case</span><span class="dl">'</span><span class="p">,</span> <span class="k">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="nx">expectToThrow</span> <span class="o">=</span> <span class="k">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="nx">mockResolver</span><span class="p">(</span><span class="nx">signup</span><span class="p">.</span><span class="nx">cancelSignup</span><span class="o">!</span><span class="p">)(</span>
+        <span class="nx">RESOLVER_PARENT</span><span class="p">,</span>
+        <span class="p">{</span>
+          <span class="na">reason</span><span class="p">:</span> <span class="dl">'</span><span class="s1">foo</span><span class="dl">'</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="nx">MOCK_CONTEXT</span>
+      <span class="p">);</span>
+    <span class="p">};</span>
+    <span class="nx">expect</span><span class="p">.</span><span class="nx">assertions</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+    <span class="k">return</span> <span class="nx">expectToThrow</span><span class="p">().</span><span class="k">catch</span><span class="p">((</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="nx">expect</span><span class="p">(</span><span class="nx">e</span><span class="p">).</span><span class="nx">toBeDefined</span><span class="p">();</span>
+    <span class="p">});</span>
+  <span class="p">});</span>
+
+  <span class="nx">it</span><span class="p">(</span><span class="dl">'</span><span class="s1">tests the return value of the resolver</span><span class="dl">'</span><span class="p">,</span> <span class="k">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="c1">// You can also set up other mocks as needed, then assert that they were</span>
+    <span class="c1">// called later on.</span>
+    <span class="kd">const</span> <span class="nx">result</span> <span class="o">=</span> <span class="k">await</span> <span class="nx">mockResolver</span><span class="p">(</span><span class="nx">signup</span><span class="p">.</span><span class="nx">cancelSignup</span><span class="o">!</span><span class="p">)(</span>
+      <span class="nx">RESOLVER_PARENT</span><span class="p">,</span>
+      <span class="p">{</span>
+        <span class="na">reason</span><span class="p">:</span> <span class="dl">'</span><span class="s1">foo</span><span class="dl">'</span><span class="p">,</span>
+      <span class="p">},</span>
+      <span class="nx">MOCK_CONTEXT</span>
+    <span class="p">);</span>
+
+    <span class="nx">expect</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">someFieldOnReturnResult</span><span class="p">).</span><span class="nx">toBe</span><span class="p">(</span><span class="dl">"</span><span class="s2">some test assertion</span><span class="dl">"</span><span class="p">);</span>
+  <span class="p">});</span>
+<span class="p">});</span>
+
+</code></pre></div></div>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Unit Testing of GraphQL Middleware in TypeScript]]></title>
+    <link href="http://louisrli.github.io/blog/2020/10/09/unit-testing-graphql-middleware-typescript/"/>
+    <updated>2020-10-09T00:00:00+01:00</updated>
+    <id>http://louisrli.github.io/blog/2020/10/09/unit-testing-graphql-middleware-typescript</id>
+    <content type="html"><![CDATA[<p>This post gives a code example on how to unit test a GraphQL middleware in
+TypeScript with Jest, using the Express GraphQL middleware resolver
+<a href="https://github.com/maticzav/graphql-shield">graphql-shield</a> as an example. It
+should generalize to other middlewares.</p>
+
+<!-- more -->
+
+<h2 id="description">Description</h2>
+
+<p>In this test, we essentially set up a new set of resolvers from scratch using
+the schema by loading all GraphQL schema files from a directory. By using
+<code class="language-plaintext highlighter-rouge">makeExecutableSchema</code> to create a schema and
+<a href="https://www.apollographql.com/docs/apollo-server/api/graphql-tools/#addmockfunctionstoschemaoptions"><code class="language-plaintext highlighter-rouge">addMockFunctionsToSchema</code></a>,
+we mock out the endpoints.</p>
+
+<p>My application is using <a href="https://github.com/prisma-labs/graphql-yoga/">graphql-yoga</a>, although this is actually irrelevant to the test environment (you’ll notice no references to it here).</p>
+
+<p>In this example, I use an external Express GraphQL middleware resolver:
+<a href="https://github.com/maticzav/graphql-shield">graphql-shield</a>, a permissions
+layer for GraphQL.</p>
+
+<h2 id="drawbacks">Drawbacks</h2>
+<p>A huge drawback of this approach is that we need to type out GraphQL queries as
+strings without having them typechecked. I didn’t find a good way to have
+typechecked queries here, although it may be possible somehow with <a href="https://graphql-code-generator.com/">GraphQL Code
+Generator</a> (if you find a way, please
+comment below).</p>
+
+<p>Note that it’s possible to individually unit test any rules that you
+use in the permissions as well (independent of GraphQL).</p>
+
+<h2 id="code">Code</h2>
+<div class="language-typescript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/**
+ * An example of testing a GraphQL middleware. In this test, the resolvers
+ * themselves have no actual implementation.
+ */</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">makeExecutableSchema</span><span class="p">,</span> <span class="nx">addMockFunctionsToSchema</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">graphql-tools</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">graphql</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">graphql</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">applyMiddleware</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">graphql-middleware</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">mergeTypeDefs</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">@graphql-tools/merge</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">loadFilesSync</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">@graphql-tools/load-files</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">permissions</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">./permissions</span><span class="dl">'</span><span class="p">;</span>
+
+<span class="kd">const</span> <span class="nx">SCHEMA_DIRECTORY</span> <span class="o">=</span> <span class="dl">'</span><span class="s1">./src/schema</span><span class="dl">'</span><span class="p">;</span>
+
+<span class="kd">let</span> <span class="nx">schemaWithMiddleware</span><span class="p">:</span> <span class="nx">ReturnType</span><span class="o">&lt;</span><span class="k">typeof</span> <span class="nx">applyMiddleware</span><span class="o">&gt;</span><span class="p">;</span>
+
+<span class="nx">beforeAll</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">typesArray</span> <span class="o">=</span> <span class="nx">loadFilesSync</span><span class="p">(</span><span class="nx">SCHEMA_DIRECTORY</span><span class="p">,</span> <span class="p">{</span>
+    <span class="na">extensions</span><span class="p">:</span> <span class="p">[</span><span class="dl">'</span><span class="s1">graphql</span><span class="dl">'</span><span class="p">],</span>
+  <span class="p">});</span>
+  <span class="kd">const</span> <span class="nx">typeDefs</span> <span class="o">=</span> <span class="nx">mergeTypeDefs</span><span class="p">(</span><span class="nx">typesArray</span><span class="p">);</span>
+  <span class="kd">const</span> <span class="nx">schema</span> <span class="o">=</span> <span class="nx">makeExecutableSchema</span><span class="p">({</span> <span class="nx">typeDefs</span> <span class="p">});</span>
+  <span class="nx">addMockFunctionsToSchema</span><span class="p">({</span> <span class="nx">schema</span> <span class="p">});</span>
+  <span class="c1">// `permissions` here is the call shield() in GraphQL shield. Its type should</span>
+  <span class="c1">// be compatible with applyMiddleware for graphql-middleware.</span>
+  <span class="nx">schemaWithMiddleware</span> <span class="o">=</span> <span class="nx">applyMiddleware</span><span class="p">(</span><span class="nx">schema</span><span class="p">,</span> <span class="nx">permissions</span><span class="p">);</span>
+<span class="p">});</span>
+
+<span class="kd">const</span> <span class="nx">Queries</span><span class="p">:</span> <span class="nb">Record</span><span class="o">&lt;</span><span class="kr">string</span><span class="p">,</span> <span class="kr">string</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="c1">// An example of a GraphQL query you can write here. As mentioned in the</span>
+  <span class="c1">// article, the inability to get static typing here is unideal.</span>
+  <span class="na">INITIALIZE_CARD_SESSION</span><span class="p">:</span> <span class="s2">`
+    mutation {
+      initializeCardSession(selector: { scheduleDayId: "foo" }) {
+        session {
+          id
+        }
+      }
+    }
+    `</span><span class="p">,</span>
+<span class="p">};</span>
+
+<span class="nx">describe</span><span class="p">(</span><span class="dl">'</span><span class="s1">test suite</span><span class="dl">'</span><span class="p">,</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">it</span><span class="p">(</span><span class="dl">'</span><span class="s1">tests a single aspect</span><span class="dl">'</span><span class="p">,</span> <span class="k">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="c1">// Set up mocks etc here for the implementation of the middleware if needed.</span>
+    <span class="kd">const</span> <span class="nx">mockContext</span> <span class="o">=</span> <span class="p">{};</span>
+
+    <span class="kd">const</span> <span class="nx">result</span> <span class="o">=</span> <span class="k">await</span> <span class="nx">graphql</span><span class="p">(</span>
+      <span class="nx">schemaWithMiddleware</span><span class="p">,</span>
+      <span class="c1">// You can inline the query here or declare it at the top of the test if</span>
+      <span class="c1">// you wish.</span>
+      <span class="nx">Queries</span><span class="p">.</span><span class="nx">INITIALIZE_CARD_SESSION</span><span class="p">,</span>
+      <span class="kc">null</span><span class="p">,</span>
+      <span class="nx">mockContext</span><span class="p">,</span>
+    <span class="p">);</span>
+
+    <span class="c1">// You can access the result of the resolver like so.</span>
+    <span class="c1">// Note that we are simply testing the middleware here; the actual resolver</span>
+    <span class="c1">// has no implementation since we used addMockFunctionsToSchema().</span>
+    <span class="nx">expect</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">data</span><span class="p">).</span><span class="nx">toBeFalsy</span><span class="p">();</span>
+
+    <span class="c1">// In this example test, we are testing our permissions middleware in</span>
+    <span class="c1">// properly returning an error.</span>
+    <span class="nx">expect</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">errors</span><span class="p">).</span><span class="nx">toBeTruthy</span><span class="p">();</span>
+    <span class="nx">expect</span><span class="p">(</span><span class="nx">res</span><span class="p">.</span><span class="nx">errors</span><span class="o">!</span><span class="p">.</span><span class="nx">length</span><span class="p">).</span><span class="nx">toBe</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+    <span class="nx">expect</span><span class="p">(</span><span class="nx">res</span><span class="p">.</span><span class="nx">errors</span><span class="o">!</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">!</span><span class="p">.</span><span class="nx">message</span><span class="p">).</span><span class="nx">toEqual</span><span class="p">(</span>
+      <span class="nx">expect</span><span class="p">.</span><span class="nx">stringContaining</span><span class="p">(</span><span class="dl">'</span><span class="s1">You need to be an admin</span><span class="dl">'</span><span class="p">)</span>
+    <span class="p">);</span>
+  <span class="p">});</span>
+<span class="p">});</span>
+
+</code></pre></div></div>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Istanbul Frontend Bootcamp Retrospective]]></title>
+    <link href="http://louisrli.github.io/blog/2020/07/02/teaching-thoughts/"/>
+    <updated>2020-07-02T00:00:00+01:00</updated>
+    <id>http://louisrli.github.io/blog/2020/07/02/teaching-thoughts</id>
+    <content type="html"><![CDATA[<p>This post is a compendium of my thoughts as an instructor for a
+non-profit coding bootcamp teaching frontend web development (JavaScript and
+React). It first establishes the context, then explores the best ways to
+maximize teaching impact based on the constraints of the context.</p>
+
+<p>This post has four parts:</p>
+<ol>
+  <li>Why is this bootcamp different from other ways people learn
+coding?</li>
+  <li>Two teaching philosophies</li>
+  <li>Concrete strategies for practitioners</li>
+  <li>Miscellaneous thoughts</li>
+</ol>
+
+<!-- more -->
+
+<h1 id="differences-from-traditional-bootcamps">Differences from traditional bootcamps</h1>
+<p>In this section, I set the context for this bootcamp and discuss some
+important differences to keep in mind between this bootcamp and other
+coding class settings, primarily with respect to time and money investment. The
+purpose of this background is to start the reader thinking about how these might
+affect the students’ mentality.</p>
+
+<h2 id="the-istanbul-bootcamp">The Istanbul Bootcamp</h2>
+
+<p>The bootcamp is approximately five months, with three months of classes and
+approximately two months of a final project. The students are mostly
+Turkish and Syrian in nationality. The class size is approximately 24. The
+male-female ratio is approximately 60-40.</p>
+
+<p>During the application process, the students are asked to do an HTML/CSS
+exercise, but otherwise, no previous coding experience is required. However,
+some students certainly have more existing experience than others, which has the
+potential to demoralize students.</p>
+
+<h2 id="from-universities">From universities</h2>
+<p>Compared to universities, there are two primary differences in the bootcamp:</p>
+<ol>
+  <li>Students do not pay for the bootcamp</li>
+  <li>Students are not graded in the bootcamp</li>
+</ol>
+
+<p>I encourage the reader to consider this question: “why do students in
+university make an effort?”</p>
+
+<h2 id="from-paid-bootcamps">From paid bootcamps</h2>
+<p>Compared to paid bootcamps, the students are not paying a large sum of money.
+The tuition of HackReactor is $18,000. That’s quite an investment.</p>
+
+<h2 id="ramifications">Ramifications</h2>
+<p>We’ve established some of the differences between this bootcamp and other
+similar venues of teaching coding. Next, let’s consider some 
+consequences of these discrepancies.</p>
+
+<p>In this section, I won’t discuss solutions. I will simply posit some salient
+problems.</p>
+
+<h3 id="ease-of-quitting">Ease of quitting</h3>
+<p>In this context, the threshold for quitting is much lower than in university or
+paid bootcamps.</p>
+
+<p>Our bootcamp students frequently broach the idea of quitting during stressful
+times, likely because the sunk cost is low. In contrast, in university or
+paid bootcamps, the threshold is higher, because the student doesn’t want to
+lose three years of money/time invested or ten thousand US dollars,
+respectively.</p>
+
+<h3 id="lack-of-motivation-to-do-assignments">Lack of motivation to do assignments</h3>
+<p>Consider this hypothetical: if a university had no grades and no exams, how many
+students would do the assignments as compared to a university that had these?</p>
+
+<p>Even in considering this hypothetical, one can see the problem. There is no
+external motivator or metric for our bootcamps’ students. Students should only
+be removed from the bootcamp for particularly egregious behavior, but it is
+certainly not taken lightly – part of our ethical responsibility is to
+encourage them psychologically.</p>
+
+<p>One of my favorite phrases, for all parts of life: “you can’t make anyone do
+anything in this world” (barring duress and so on).</p>
+
+<h3 id="propensity-to-complain">Propensity to complain</h3>
+<p>In general, students in our bootcamps like to gripe about various parts of the
+bootcamp: homework, projects, process, class, etc. Whether this is due to a
+cultural or a venue difference, I can’t say.</p>
+
+<p>However, I do believe that one reason for this propensity for complaining is the
+aforementioned lack of investment, which emboldens the students. While
+complaining is not inherently dangerous, a cycle of complaining potentially
+causes students to demotivate each other and consequently increases the risk of
+quitting.</p>
+
+<p>Note that there is a nuance between feedback and complaining, and instructors
+should still objectively evaluate complaints for genuine feedback.</p>
+
+<h3 id="summary-of-differences">Summary of differences</h3>
+<p>The summary of these differences is this: for our bootcamps, the student has
+invested neither money nor time. The only way to motivate these students is to
+<strong>foster an intrinsic interest in participating in the bootcamp</strong>.</p>
+
+<p>The definition of “fostering intrinsic interest” will be expounded at length
+below.</p>
+
+<p>Outside the scope of this post: the filtering qualities of interviews are also
+important in influencing student motivation.</p>
+
+<h1 id="precursors-on-philosophy">Precursors on philosophy</h1>
+<p>Before we continue into more concrete strategies, I want
+to discuss two of my driving philosophies for teaching.</p>
+
+<h2 id="treating-students-as-relationships">Treating students as relationships</h2>
+<p>The first driving philosophy: <strong>the skills that I apply for teaching are
+no different from those that I apply for a significant other or close friends</strong>.
+That means understanding another individuals needs, desires, life state, past
+experiences in the class, etc. What will make this person happy? What is this
+person looking for? How can I provide these things?</p>
+
+<p>I truly believe the following statement to be true: the success of this
+particular coding bootcamp only slightly depends on how you teach the material,
+<strong>it depends almost completely on how loved and motivated you make your students
+feel</strong>. In this particular context, when the emotional environment is correct,
+the students’ hard work and enthusiasm will follow.</p>
+
+<p>This is not to say that coherent instruction does not make a difference – it
+does. But in an art that requires self-research and emotional discipline from
+students, a caring instructor with mediocre teaching skills will be far more
+impactful than an emotionally-neutered instructor with excellent teaching
+skills.</p>
+
+<h2 id="maximizing-impact-for-time">Maximizing impact for time</h2>
+<p>The second driving philosophy: find time-cheap but psychologically-impactful
+ways to treat students.</p>
+
+<p>Consider this question:
+<strong>given that I have N students, how can I make them all feel loved and motivated
+while minimizing the average amount of time I spend on an individual student?</strong></p>
+
+<p>The things that I describe below, for the most part, will not eat up your
+time. I wouldn’t do them if they did. But with this “one weird trick”, five
+to fifteen minutes of your time can make all the difference in the world.</p>
+
+<p>For what it’s worth, this graph represents all aspects of my life, not just
+teaching. It makes life a bit easier, in my humble opinion, to hunt for these
+optimizations.</p>
+
+<p><img src="/images/graph.jpg" alt="" /></p>
+
+<h1 id="fostering-intrinsic-interest">Fostering intrinsic interest</h1>
+<p>Intrinsic interest means that the student cares, in their heart, about doing
+well in the course, completing the assignments, and learning the material. A
+non-exhaustive list of where intrinsic interest comes from:</p>
+
+<ul>
+  <li>The student feels cared for by the instructors</li>
+  <li>The student feels pride in their work</li>
+  <li>The student respects the instructors as people</li>
+  <li>The student wants to continue despite hardships in coursework</li>
+</ul>
+
+<p>In the absence of any other external motivators, our bootcamps have no choice
+but to rely on intrinsic interest. This section focuses on
+providing <strong>concrete strategies</strong> for intrinsically motivating students. Each
+section simultaneously posits a principle and pairs it with a description of a
+real, implementable strategy.</p>
+
+<p>This post is not meant to be a solely theoretical
+exploration of what motivates students; these actions are intended to be
+executed by practitioners.</p>
+
+<h2 id="the-illusion-of-individual-attention">The illusion of individual attention</h2>
+<p>I call this the illusion of individual attention, because in a class of 24, it’s
+not possible for you to truly give sustained individual attention to every student.
+However, you can perpetuate the idea that you are trying your best to get
+individual attention to every student.</p>
+
+<p>In a class of this size, students don’t expect individual attention. In fact, I
+find that most students are very understanding of the fact that the instructors
+are trying to juggle between the students.</p>
+
+<p>Surprisingly, the students’ understanding of this is something that you
+can capitalize on. When you <em>do</em> show a student individual attention, their
+awareness of the resource constraints causes them to appreciate your efforts
+even more, consequently inspiring them.</p>
+
+<p>The ultimate cost of the actions below are very low, but they mean the world to
+the students. Recall our efforts to maximize impact for minimal time.</p>
+
+<p><strong>Concrete actions</strong></p>
+
+<ul>
+  <li><strong>Initial one-on-ones:</strong> Have a one-on-one with each student at the beginning of the course.</li>
+  <li><strong>Availability for one-on-ones:</strong> Allocate one to two hours each week for 20 minute one-on-ones with students.
+Even if they never capitalize on it, they appreciate the fact that it’s
+possible.</li>
+  <li><strong>Occasional check-ins:</strong> Occasionally message students randomly to ask how they’re doing or what their
+thoughts are. It takes less than two minutes of time to message ten students.</li>
+</ul>
+
+<h2 id="constructing-a-serious-environment">Constructing a serious environment</h2>
+<p>The environment and tone that the teaching staff sets is by far one of the most
+important things to do. If you seem to be lax about their performance, they will
+certainly be lax about their performance.</p>
+
+<p>I’ll cover this section with an anecdote.</p>
+
+<p>The way I came to understand this is a bit amusing, in my opinion. After a few
+strict lectures to the class, a number of students approached me concerned
+about their performance or actions in the course. (Slightly unrelated note: when
+you give strict talks to your whole class about assignments and such, I realized
+that every student thinks you’re talking directly about them, even if they’re
+doing completely fine).</p>
+
+<p>While my external self had always taken the class very seriously – and my
+internal self, of course, to a certain extent – I was truly surprised by how
+worried these students were about their performance in the class. My initial
+reaction was: “It was just a prank bro. I’m just a kid that likes to
+breakdance (not a strict teacher trying to berate you).”</p>
+
+<p>The reason that this surprised me so much was that, previously, I did feel like
+I had trouble motivating my students to do their work. After all, recall the
+differences that we established in the beginning. There are no grades. There is
+no invested money. That’s not to say my students wouldn’t take it seriously, but
+why are they taking it <em>this</em> seriously?</p>
+
+<p>But then I realized, that I had unintentionally stumbled upon something that
+I’ve always known in my relationships and friendships: <strong>If you are proactive
+about taking something seriously, the other person will be much more likely to
+take it seriously.</strong> Don’t sit around waiting for the other person to be the one
+to do so.</p>
+
+<p><strong>Concrete actions</strong></p>
+<ul>
+  <li><strong>Communicate your investment:</strong> “I take your education very seriously, and I
+expect you to take it seriously too.”</li>
+  <li><strong>Show with your actions:</strong> Words only mean so much in this world. Show your
+students you take it seriously in the quality of your teaching and your
+interactions with your students (see all the other sections).</li>
+</ul>
+
+<h2 id="professionalism-and-personalization">Professionalism and personalization</h2>
+
+<h3 id="professionalism">Professionalism</h3>
+<p>The more professional your content is, the more it reinforces students’ belief
+in the authority and legitimacy of the classroom.</p>
+
+<p>Suppose the contrasting hypothetical: your slides are poorly written; your
+assignment instructions have no consistent formatting; your in-class activities
+are full of typos. Inevitably, your students will start learning from other
+content on the internet, and they’ll come to the following realization: “Wow,
+the teaching materials that our teacher is giving us are shit quality.”</p>
+
+<p>Among my students in particular, I have noticed how captivated they are by the
+professional and formal aspects presented by the organization’s onboarding and
+branding. To capitalize on that captivation, this professionalism needs to be
+continued in the classroom.</p>
+
+<p><strong>Concrete actions</strong></p>
+<ul>
+  <li><strong>Professional content:</strong> All slides, assignments, and course material should
+be formatted professionally and flawlessly. Minimize typos.</li>
+  <li><strong>Agenda slides:</strong> Show an agenda slide at the beginning of each class. It
+provides a sense of official-ness, like university.</li>
+</ul>
+
+<h3 id="personalization">Personalization</h3>
+<p>Students like the idea that the organization is doing something for them. <em>Just</em> for
+them. This doesn’t mean that you have to write the assignment
+from scratch, but it should at least be presented in a manner that suggests that
+you’re thinking of the student. Recall the goal: <strong>make the student feel cared
+for</strong>.</p>
+
+<p>Compare the following two situations:</p>
+
+<p><strong>Positive impact</strong></p>
+<blockquote>
+  <p>Teacher: We thought about where the class currently is, and the teaching staff
+designed this activity for you all based on your feedback and struggles.
+Please do this activity.</p>
+
+  <p>Student: Wow, the teacher put in so much effort for us!</p>
+</blockquote>
+
+<p><strong>Neutral impact</strong> (but probably negative if chronic)</p>
+<blockquote>
+  <p>Teacher: Here’s a link to this site, please do this activity.</p>
+
+  <p>Student: Sure.</p>
+</blockquote>
+
+<p><strong>Concrete actions</strong></p>
+<ul>
+  <li><strong>Revamp outside resources:</strong> Avoid chronically linking to other resources for
+activities. Either put them in your own document or write your own, giving
+proper attribution as needed.  Even the act of putting it in your own document
+pushes this edge.</li>
+  <li><strong>Emphasize your effort:</strong> Mention to your students how the material was made
+by your organization on their behalf. Let them know you made an effort for
+them.</li>
+</ul>
+
+<h2 id="projects-that-express-self-identity">Projects that express self-identity</h2>
+<p>In the absence of grades, one of the best motivators for effort is to allow
+students to express themselves through their work. Humans like expressing
+themselves. Humans like to build things, look at them, and say, “This is me. I did
+this.” This is a fact, and we can capitalize on this fact in order to
+incentivize students.</p>
+
+<p>When ten groups of students do assignments that all look almost exactly the
+same, the student does not think, “This is me. I did this.”</p>
+
+<p>My own students have constantly surprised me with how much effort they put into
+projects. For example, they come into office hours and talk about the hours
+working on something (styling, a special feature they came up, etc.) that was
+outside the stated project requirements. Part of this is because I personally
+would never do anything beyond the minimal requirements, but part of it is
+because, until I was blown away repeatedly by this phenomenon, I had never
+realized the power of allowing students to invest their identity in their work.</p>
+
+<p><strong>Concrete actions</strong></p>
+
+<p>Devise coding projects with open-ended interpretations (in styling or
+functionality).</p>
+
+<p>Different project designs can have different degrees of self-identity; I would
+argue that some non-zero amount is necessary for every project.</p>
+
+<p>For example, the final project of our course was “the board
+project”, which required only the very general concept of boards and items that
+could be put on boards. The ultimate result was a wide array of projects with a
+personal touch: to-do lists, cookbooks, course project trackers, and the
+students ultimately invested much more time than if we had assigned a “to-do
+list project.”</p>
+
+<h2 id="social-cohesion">Social cohesion</h2>
+<p>When the social aspect of the class is strong, students try harder. Part of it
+is that they enjoy the class, but part of it is that most people don’t want to
+be known by their friends as the student who doesn’t try.</p>
+
+<p>So the question is this: how do you encourage people to like each other? To be
+honest, as instructors, we don’t have much agency here; you can’t make people
+form bonds. However, you can try your best to facilitate situations where it can
+happen.</p>
+
+<p><strong>Concrete actions</strong></p>
+
+<ul>
+  <li><strong>Project partners:</strong> Select project partners with the intent of forming bonds between students of
+similar levels</li>
+  <li><strong>Promoting thought:</strong> Ask students who their favorite people to work with are (not for any
+particular reason other than for them to ponder this question)</li>
+  <li><strong>Allocate time for small socialization</strong>: Encourage socializing and jokes in class, allocate “empty time”</li>
+  <li><strong>Use office hours:</strong> Leave time in office hours for students to chat with each other</li>
+</ul>
+
+<h2 id="expression-of-belief">Expression of belief</h2>
+<p>Coding bootcamps can be quite intense for some of the students. There will come
+a time when some students don’t believe in themselves or their ability to
+understand the content. And when that time comes,
+it’s not important whether or not you believed in them, it’s important whether
+or not you <strong>communicated that you believed in them</strong>.</p>
+
+<p>I again emphasize the illusion of individual attention.</p>
+
+<p><strong>Concrete actions</strong></p>
+
+<ul>
+  <li><strong>Individual messaging:</strong> Identifying students that are struggling, and telling them, directly to their
+face (via Zoom, this is 2020), that you believe in them. Offer them the option
+to meet one-on-one.</li>
+  <li><strong>Humbling your journey:</strong> Show that you, too, come from humble beginnings. Whether that means you
+went through a bootcamp yourself, or that you struggled a lot when you started
+coding, show the students that their struggle is normal. For example, I showed
+my students emails from my first two months in coding where I sent emails to
+my friend raging about bugs in my code. I had multiple students tell me that
+this humanized my journey despite the pedigree.</li>
+  <li><strong>Inspirational speeches:</strong> Be liberal with the inspirational speeches in
+class. They never stop feeling weird to me, but it matters.</li>
+  <li><strong>Emphasize first exposure:</strong> Tell your students that when you show them
+something for the first time, they’re not expected to understand it. A phrase
+my students are familiar with: “This is just a first exposure.”</li>
+</ul>
+
+<h1 id="other-takeaways">Other takeaways</h1>
+<p>These are miscellaneous addenda that don’t belong in the categories above, but
+these are points I would tell myself if I could travel back in time. In the end,
+these happened naturally, but I didn’t codify them into thoughts until the
+middle of the course.</p>
+
+<h2 id="teaching-a-way-of-thinking">Teaching a way of thinking</h2>
+<p>I encourage you to ask yourself this question: “at the end of the course, who do
+I hope my students to be?”</p>
+
+<p>It’s not my place to say what the right or wrong answer is. If you’re a teacher,
+you set the goals. But by the way, there is a wrong answer, and that wrong
+answer is: “a student that knows JavaScript and React.”</p>
+
+<p>The right answer is that the student:</p>
+<ul>
+  <li>is no longer scared to learn a new technology or tool</li>
+  <li>never compares himself or herself to other people again</li>
+  <li>is unfazed by setbacks, even when a small bug costs five hours of time
+(instead of thinking, “programming is not for me”)</li>
+</ul>
+
+<p>I’m certain this is not a novel idea I’m proposing; most successful introductory
+computer science courses, such as CS50, operate along the same mentality.</p>
+
+<p>But I’d like to note something interesting here. None of the things above have
+to do with specific knowledge of a subject; <strong>they all pertain to how the
+students think as people</strong>.</p>
+
+<p>With these goals in mind, here are some modes of operation:</p>
+<ul>
+  <li><strong>Constantly introduce new things:</strong> Spend the course bombarding students with
+new things. Just as they start to feel comfortable with something, you
+introduce something (perhaps only slightly) new on top of it.</li>
+  <li><strong>Demo your thought process:</strong> When feasible, walk the student how you thought
+about the problem. “You see, I just Googled this thing.” “I worked backwards
+from this variable to find the issue.”</li>
+  <li><strong>Comfort your students:</strong> When your students finally fix a bug that took them
+forever, comfort them psychologically. Tell them it’s normal. Emphasize your
+belief in them.</li>
+</ul>
+
+<h2 id="trust-the-process">Trust the process</h2>
+<p>The students will learn the material eventually – trust the process. I’ll admit
+that even I wasn’t sure whether my students were learning anything at some
+point. There were times in the course when almost all of the students seemed
+completely lost in all of the in-class activities (to be fair, I was also
+pushing the pace very quickly).</p>
+
+<p>Luckily, I had my trusty teaching partner Ammar, who informed me that
+these struggles were normal. In the same way that I tell my students, “Hey, this
+is normal,” Ammar’s evaluation sealed away any concerns I had. In the end, I
+trust Ammar’s judgment completely, given that he’d experienced two bootcamps
+before me.</p>
+
+<p>I’ll also say this: in-class activities are a very short amount of time to exercise
+real exploration beyond basics. The core of the learning will come from the
+multi-week projects that students do. That’s the real shit, pardon my French.
+And if the students are invested in completing projects, the learning will
+follow.</p>
+
+<h1 id="conclusions">Conclusions</h1>
+<p>At this point, I’d like to highlight a critical observation: <strong>none of these
+actions take much time</strong>. They are simply small flourishes to the interactions
+with students.</p>
+
+<p>But if you’ve ever played any skill-based game, then you’ll be familiar with
+this concept: the people who are the best at anything in life are those that
+push all the smallest advantages. The best chess players leave no tradeoff
+unpunished. The best football players leave no misstep unexploited. Capitalizing
+on small edges differentiates one who is the best at something and one who is
+average.</p>
+
+<p>Finally, achieving anything in our lives is a function of our goals, and
+it’s good to recall our broader goals. In whatever context you teach
+in, I encourage you to refresh your goals. For Re:Coded, they would be this:</p>
+
+<ul>
+  <li>To teach students the programmer mindset (how to learn, debug, etc.)</li>
+  <li>To empower students to obtain and excel at a development job</li>
+</ul>
+
+<p>And to achieve these goals, we should not simply be settling at teaching our
+students React and JavaScript. The question is not where can we take the
+students, but <em>how far</em> can we take them?</p>
+
+<p>And for that reason, I urge you to never be complacent with your students.</p>
+
+<p>One hour of your time per week could be the difference between your student hating
+or loving the course.</p>
+
+<p>Two hours of your time per week could be the difference between your student
+landing a frontend job or not.</p>
+
+<p>Three hours of your time per week could be the difference between your student
+landing a job on a weak currency or a strong one.</p>
+
+<p>Calculate the margins, and remember the graph.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Traveling from Istanbul to Şile by Bus]]></title>
+    <link href="http://louisrli.github.io/blog/2020/07/01/istanbul-to-sile/"/>
+    <updated>2020-07-01T00:00:00+01:00</updated>
+    <id>http://louisrli.github.io/blog/2020/07/01/istanbul-to-sile</id>
+    <content type="html"><![CDATA[<p>The intention of this post is to document how to travel from Istanbul to Şile by
+bus. At the time of writing, there do not appear to be any English resources for
+this route. The official IETT app and Google Maps both document this incorrectly.</p>
+
+<!-- more -->
+
+<p>Şile is a popular place for the residents of Istanbul to escape for a day trip.
+Technically, Şile is part of Istanbul, although it’s quite remote. The bus ride
+is about two hours away; by car, it is about 45 minutes.</p>
+
+<h2 id="bus-line">Bus Line</h2>
+<p>Taking any bus that is prefixed with <strong>139</strong> is okay, all of them stop at Şile
+first but their continuing routes after Şile may differ.</p>
+
+<p>The
+<a href="https://www.iett.istanbul/en/main/hatlar/139/%C3%9CSK%C3%9CDAR%20-%20%C5%9E%C4%B0LE-%C4%B0ETT-Otob%C3%BCs-Sefer-Saatleri-ve-Duraklar%C4%B1">IETT</a>
+site gives a description of the stops; however, as explained below, the bus stop
+location is incorrect on the site. Also note that this link only shows the 139
+bus, but the 139A, 139T, etc. also run, meaning that there is approximately one
+bus to Şile every hour.</p>
+
+<p>The bus has various stops in the Şile area, though the bus terminal is a safe
+bet for a place to get off.</p>
+
+<h2 id="bus-stop-location">Bus Stop Location</h2>
+<p><strong>Do not wait at the Üsküdar Marmaray bus station.</strong> The correct location for
+this intercity bus is the Şemsipaşa stop (<a href="https://goo.gl/maps/3YyADTwU8gENbKk98">Google Maps
+link</a>), which is about a block west.
+There, you will see a paper with times for the bus to Şile.</p>
+
+<p>A ticket is required for this bus. The place to purchase the tickets is about a
+two minute walk from the bus stop (<a href="https://goo.gl/maps/R4AqwriFRpaxxnDp8">Google Maps
+link</a>). At the time of writing (July
+2020), a one way ticket was 14.50 lira. If you don’t speak Turkish, you probably
+can’t get on the bus without a ticket, although I’ve been told it’s possible to
+sit on the floor if the bus is full.</p>
+
+<p>If you try to buy too close to the departure time, it’s possible that the bus
+may be full.</p>
+
+<p>It may be possible to buy online, but the author of this article doesn’t know
+how.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Using MathJax with React]]></title>
+    <link href="http://louisrli.github.io/blog/2020/06/04/react-mathjax/"/>
+    <updated>2020-06-04T00:00:00+01:00</updated>
+    <id>http://louisrli.github.io/blog/2020/06/04/react-mathjax</id>
+    <content type="html"><![CDATA[<p>This post describes how to use React (Typescript) and MathJax.</p>
+
+<!-- more -->
+
+<p>There are a few performance optimizations:</p>
+
+<ul>
+  <li><a href="https://reactjs.org/docs/react-api.html#reactmemo">React.memo</a> makes it so
+that even if the parent rerenders but the Latex does not change, the component
+does not rerender
+(<a href="https://stackoverflow.com/questions/54015086/how-to-prevent-child-component-from-re-rendering-when-using-react-hooks-and-memo">reference</a>).</li>
+  <li>The MathJax <code class="language-plaintext highlighter-rouge">typeset()</code> is only called when <code class="language-plaintext highlighter-rouge">rawLatex</code> changes. Technically,
+this is unnecessary, as the <code class="language-plaintext highlighter-rouge">React.memo</code> should mean that it only rerenders
+when the prop changes.</li>
+</ul>
+
+<p>You can either load MathJax in the head or load it dynamically in other ways.
+With Next.js, I was running into issues with using the <code class="language-plaintext highlighter-rouge">&lt;Head&gt;</code> tag; see <a href="./2020-06-04-react-dynamic-script-hook">how to
+dynamically load scripts in React</a>.</p>
+
+<div class="language-typescript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/**
+ * Combined with dynamic script loading, this component allows us to render
+ * MathJax. Uses MathJax 3.0. It takes an approach similar to the article below:
+ *
+ * https://engineering.classpro.in/render-latex-in-react-using-mathjax-f9742504678
+ *
+ * but then adapts based on MathJax 3.0:
+ *
+ * http://docs.mathjax.org/en/latest/web/typeset.html#handling-asynchronous-typesetting
+ */</span>
+
+<span class="k">import</span> <span class="nx">React</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react</span><span class="dl">'</span><span class="p">;</span>
+
+<span class="kd">const</span> <span class="nx">getMathJax</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">(</span><span class="nb">window</span> <span class="k">as</span> <span class="kr">any</span><span class="p">).</span><span class="nx">MathJax</span><span class="p">;</span>
+
+<span class="kd">const</span> <span class="nx">typeset</span> <span class="o">=</span> <span class="p">(</span><span class="nx">selector</span><span class="p">:</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="nx">HTMLElement</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">mathJax</span> <span class="o">=</span> <span class="nx">getMathJax</span><span class="p">();</span>
+  <span class="c1">// If MathJax script hasn't been loaded yet, then do nothing.</span>
+  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">mathJax</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="kc">null</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="nx">mathJax</span><span class="p">.</span><span class="nx">startup</span><span class="p">.</span><span class="nx">promise</span> <span class="o">=</span> <span class="nx">mathJax</span><span class="p">.</span><span class="nx">startup</span><span class="p">.</span><span class="nx">promise</span>
+    <span class="p">.</span><span class="nx">then</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="nx">selector</span><span class="p">();</span>
+      <span class="k">return</span> <span class="nx">mathJax</span><span class="p">.</span><span class="nx">typesetPromise</span><span class="p">();</span>
+    <span class="p">})</span>
+    <span class="p">.</span><span class="k">catch</span><span class="p">((</span><span class="na">err</span><span class="p">:</span> <span class="kr">any</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s2">`Typeset failed: </span><span class="p">${</span><span class="nx">err</span><span class="p">.</span><span class="nx">message</span><span class="p">}</span><span class="s2">`</span><span class="p">));</span>
+  <span class="k">return</span> <span class="nx">mathJax</span><span class="p">.</span><span class="nx">startup</span><span class="p">.</span><span class="nx">promise</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="kr">interface</span> <span class="nx">LatexProps</span> <span class="p">{</span>
+  <span class="nl">rawLatex</span><span class="p">:</span> <span class="kr">string</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kd">const</span> <span class="nx">Latex</span><span class="p">:</span> <span class="nx">React</span><span class="p">.</span><span class="nx">FC</span><span class="o">&lt;</span><span class="nx">LatexProps</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">rawLatex</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">ref</span> <span class="o">=</span> <span class="nx">React</span><span class="p">.</span><span class="nx">createRef</span><span class="o">&lt;</span><span class="nx">HTMLSpanElement</span><span class="o">&gt;</span><span class="p">();</span>
+  <span class="nx">React</span><span class="p">.</span><span class="nx">useEffect</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">typeset</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="nx">ref</span><span class="p">.</span><span class="nx">current</span><span class="o">!</span><span class="p">);</span>
+  <span class="p">},</span> <span class="p">[</span><span class="nx">rawLatex</span><span class="p">]);</span>
+
+  <span class="k">return</span> <span class="o">&lt;</span><span class="nx">span</span> <span class="nx">ref</span><span class="o">=</span><span class="p">{</span><span class="nx">ref</span><span class="p">}</span><span class="o">&gt;</span><span class="p">{</span><span class="nx">rawLatex</span><span class="p">}</span><span class="o">&lt;</span><span class="sr">/span&gt;</span><span class="err">;
+</span><span class="p">};</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="nx">React</span><span class="p">.</span><span class="nx">memo</span><span class="p">(</span><span class="nx">Latex</span><span class="p">);</span>
+</code></pre></div></div>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Dynamic Script Loading in React with Hooks]]></title>
+    <link href="http://louisrli.github.io/blog/2020/06/04/react-dynamic-script-hook/"/>
+    <updated>2020-06-04T00:00:00+01:00</updated>
+    <id>http://louisrli.github.io/blog/2020/06/04/react-dynamic-script-hook</id>
+    <content type="html"><![CDATA[<p>This post describes how to dynamically load a script by adding a script tag to
+your document using React Hooks.</p>
+
+<!-- more -->
+
+<p>This is a modification on the code presented in <a href="https://cleverbeagle.com/blog/articles/tutorial-how-to-load-third-party-scripts-dynamically-in-javascript">this
+article</a>.
+The script adds a script tag to the page and optionally calls a callback. It
+will not add the script again if it is already loaded. If a callback was
+provided, then it removes the script from the page when the component unmounts
+(so that the callback can be called again).</p>
+
+<div class="language-tsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/**
+ * Dynamic script loading hook.
+ */</span>
+<span class="k">import</span> <span class="nx">React</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react</span><span class="dl">'</span><span class="p">;</span>
+
+<span class="c1">// If no callback is provided, the script will not be removed on unmount. This</span>
+<span class="c1">// kinda matters if the script loading is not idempotent (for some reason</span>
+<span class="c1">// MathJax is not, which is one of the scripts I was using this for) or</span>
+<span class="c1">// if you need the callback to happen again.</span>
+<span class="kd">const</span> <span class="nx">useScript</span> <span class="o">=</span> <span class="p">(</span>
+  <span class="nx">scriptUrl</span><span class="p">:</span> <span class="kr">string</span><span class="p">,</span>
+  <span class="nx">scriptId</span><span class="p">:</span> <span class="kr">string</span><span class="p">,</span>
+  <span class="nx">callback</span><span class="p">?:</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="k">void</span>
+<span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">React</span><span class="p">.</span><span class="nx">useEffect</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="nx">existingScript</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="nx">scriptId</span><span class="p">);</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">existingScript</span><span class="p">)</span> <span class="p">{</span>
+      <span class="kd">const</span> <span class="nx">script</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="dl">'</span><span class="s1">script</span><span class="dl">'</span><span class="p">);</span>
+      <span class="nx">script</span><span class="p">.</span><span class="nx">src</span> <span class="o">=</span> <span class="nx">scriptUrl</span><span class="p">;</span>
+      <span class="nx">script</span><span class="p">.</span><span class="nx">id</span> <span class="o">=</span> <span class="nx">scriptId</span><span class="p">;</span>
+      <span class="nb">document</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">script</span><span class="p">);</span>
+
+      <span class="nx">script</span><span class="p">.</span><span class="nx">onload</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">callback</span><span class="p">)</span> <span class="p">{</span>
+          <span class="nx">callback</span><span class="p">();</span>
+        <span class="p">}</span>
+      <span class="p">};</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="nx">existingScript</span> <span class="o">&amp;&amp;</span> <span class="nx">callback</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">callback</span><span class="p">();</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="nx">existingScript</span> <span class="o">&amp;&amp;</span> <span class="nx">callback</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">existingScript</span><span class="p">.</span><span class="nx">remove</span><span class="p">();</span>
+      <span class="p">}</span>
+    <span class="p">};</span>
+  <span class="p">},</span> <span class="p">[</span><span class="nx">scriptUrl</span><span class="p">,</span> <span class="nx">scriptId</span><span class="p">]);</span>
+<span class="p">};</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="nx">useScript</span><span class="p">;</span>
+
+</code></pre></div></div>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Fiilimsi: Turkish Verbal Nouns, Adjectives, and Adverbs]]></title>
+    <link href="http://louisrli.github.io/blog/2020/04/20/turkish-fiilimsi-verbal-derivatives/"/>
+    <updated>2020-04-20T00:00:00+01:00</updated>
+    <id>http://louisrli.github.io/blog/2020/04/20/turkish-fiilimsi-verbal-derivatives</id>
+    <content type="html"><![CDATA[<style>
+blockquote {
+  font-style: unset;
+}
+
+blockquote hr {
+  margin: 0.3em 0;
+}
+
+blockquote p:first-child {
+  font-size: 12px;
+  border-bottom: 1px solid #ddd;
+}
+
+/* In case we want to bold the example headers later. */
+blockquote p:first-child strong {
+  font-weight: unset;
+}
+
+blockquote p {
+  margin-top: 0.3em !important;
+  margin-bottom: 0.3em !important;
+}
+
+</style>
+
+<p>This post talks about the concept of “fiilimsi”, which are nouns, adjectives, or
+adverbs derived from verbs. In English, for example, these include gerunds
+(“<em>Running</em> is fun”) or participle adjectives (“The dog <em>that I saw</em>”).</p>
+
+<p>This post is not intended to be a comprehensive resource of all fiilimsi.
+There are three categories of fiilimsi:</p>
+
+<ol>
+  <li><strong>isim-fiil</strong>: verbal noun</li>
+  <li><strong>sıfat-fiil</strong>: verbal adjective</li>
+  <li><strong>zarf-fiil</strong>: verbal adverb</li>
+</ol>
+
+<p>There’s a noticeable lack of English language resources on the internet about
+certain Turkish language topics. There’s a few articles about verbal derivations
+but only with minimal details. I hope this post fills that niche.</p>
+
+<p>Almost all of this material was derived from a lesson on the <a href="https://discord.me/turkceogrenelim">Türkçe Öğrenelim
+Discord</a>. Feel free to join the community
+and support them on <a href="https://www.patreon.com/letslearnturkish">Patreon</a>.</p>
+
+<!-- more -->
+
+<h1 id="prerequisites">Prerequisites</h1>
+<p>This post is not intended for complete beginners of Turkish grammar. Fiilimsi
+builds on many of the foundations of Turkish grammar. This post assumes
+prerequisite familiarity in the following topics,
+and as such will not be explaining any of the following in example
+sentences:</p>
+
+<ul>
+  <li>Possessive</li>
+  <li>Buffer letters, consonant mutation, vowel harmony</li>
+  <li>Infinitive form</li>
+  <li>Subjects and objects in Turkish</li>
+</ul>
+
+<p>There are sentence examples and grammar derivations that utilize the following,
+though it’s possible to grasp the basic idea without a strong understanding of
+these:</p>
+
+<ul>
+  <li>Simple present tense, past tense</li>
+  <li>Dative, locative, accusative cases</li>
+  <li>Future tense</li>
+  <li>Reported past tense</li>
+</ul>
+
+<h1 id="isim-fiil-verbal-nouns">Isim-fiil: Verbal nouns</h1>
+
+<h2 id="-makmek-infinitive-as-a-subject">-mak/mek: Infinitive as a subject</h2>
+
+<p>Infinitives are the “dictionary form” of a verb ending with <strong>-mak/mek</strong>, e.g.,
+bakmak (to look).</p>
+
+<h3 id="usage">Usage</h3>
+<p>The verbal noun infinitive form:</p>
+
+<ul>
+  <li>used as subject</li>
+  <li>cannot be <a href="https://en.wikipedia.org/wiki/Declension">declined</a> – that is, no
+suffixes are added to it</li>
+</ul>
+
+<blockquote>
+  <p><strong>Example</strong> (<a href="https://www.youtube.com/watch?v=uqIEiUv1bVQ">a line from this song</a>)</p>
+
+  <p><strong>Eğlenmek</strong> güzel şey.<br />
+<strong>To have fun</strong> is a beautiful thing / <strong>having fun</strong> is a beautiful thing.</p>
+</blockquote>
+
+<p>It should be noted that there are many other uses of the infinitive, but here
+we’re talking only about its usage as a noun derived from a verb.</p>
+
+<h2 id="-mame-gerund-form">-ma/me: Gerund form</h2>
+
+<p>The gerund form is constructed by adding <strong>-ma/-me</strong> to the verb root
+(alternatively, one can think of simply removing the <strong>k</strong> from the infinitive).</p>
+
+<ul>
+  <li>yap<strong>ma</strong> (doing)</li>
+  <li>bak<strong>ma</strong> (looking)</li>
+  <li>sor<strong>ma</strong> (sormak)</li>
+</ul>
+
+<h3 id="usage-1">Usage</h3>
+<p>The gerund form:</p>
+
+<ul>
+  <li>used as object</li>
+  <li>can be declined</li>
+</ul>
+
+<blockquote>
+  <p><strong>Examples</strong></p>
+
+  <p>Kitap <strong>okuma</strong>yı seviyorum.<br />
+I love reading books.</p>
+
+  <p>Dans <strong>etme</strong>ye başladım.<br />
+I started dancing.</p>
+</blockquote>
+
+<p><strong>Tip</strong>: The <em>-ma/-me</em> suffix is also used for the negative conjugation, but do
+not confuse it with the gerund construction. They can actually stack, for
+example <strong>anla-ma-ma</strong> is the noun “not understanding” (<strong>anlamak</strong> – to
+understand).</p>
+
+<h3 id="declension-exception-ablative">Declension exception: ablative</h3>
+<p>There is one exception where we use the infinitive instead; for the ablative
+form (<strong>-dan/den</strong>), we still use the infinitive form. This also violates the
+“no declension infinitive” rule. In the example below, eğlenmekten is the
+object.</p>
+
+<blockquote>
+  <p><strong>Example</strong></p>
+
+  <p><strong>Eğlenmekten</strong> keyif alırım.<br />
+I enjoy having fun.</p>
+</blockquote>
+
+<p>Likely this is because the gerund form causes ambiguity with
+<strong>-meden/-madan</strong> (eğlenmeden), which is also a verbal adverb suffix.</p>
+
+<h3 id="declension-exception-locative">Declension exception: locative</h3>
+
+<p>The locative can also be used interchangeably in some contexts. In the example
+below, both are valid uses of the verbal noun as an object.</p>
+
+<blockquote>
+  <p><strong>Examples</strong></p>
+
+  <p>Böyle yap<strong>mada</strong> sorun yok.<br />
+Böyle yap<strong>makta</strong> sorun yok.<br />
+There is no problem in doing this.</p>
+</blockquote>
+
+<p>However, you cannot use the genitive suffixes with the infinitive, so for the
+example sentence below, there is only one valid construction (yap-ma-n-da, with
+the n coming from the second-person genitive).</p>
+
+<blockquote>
+  <p><strong>Examples</strong></p>
+
+  <p>Böyle yap<strong>manda</strong> sorun yok.<br />
+There is no problem in your doing this.</p>
+</blockquote>
+
+<p>To summarize, you cannot use the accusative, dative, or genitive suffixes with
+the infinitive, but you can use the ablative and locative.</p>
+
+<h2 id="native-speaking-gerund-and-infinitive">Native speaking: gerund and infinitive</h2>
+<p>There’s a tricky exception that’s technically not correct but will be seen in
+daily speech. People add (gerund + possessed) suffixes as a way of
+creating a verbal noun in lieu of <strong>both the gerund and infinitive forms above</strong>.</p>
+
+<blockquote>
+  <p><strong>Subject example</strong></p>
+
+  <p>Denizde <strong>yüzmek</strong> eğlenceli. (gramatically correct)<br />
+Denizde <strong>yüzmesi</strong> eğlenceli. (seen in daily speech)<br />
+<strong>Swimming</strong> in the sea is fun.</p>
+</blockquote>
+
+<p>In this example, we have <strong>yüz-me-si</strong>, which adds the gerund and possessed
+suffixes, respectively.</p>
+
+<blockquote>
+  <p><strong>Object example</strong></p>
+
+  <p>Denizde <strong>yüzmeyi</strong> seviyorum.<br />
+Denizde <strong>yüzmesini</strong> seviyorum.</p>
+</blockquote>
+
+<p>In this example, we have <strong>yüz-me-si-n-i</strong>, which adds the gerund, possessed,
+-n- possessed buffer, and accusative suffixes, respectively.</p>
+
+<h2 id="-ısişuşüş-the-way-of">-ıs/iş/uş/üş: “the way of”</h2>
+
+<p><strong>DISCLAIMER</strong>: “the way of” is not always the exact meaning of this suffix; it
+can vary phrase by phrase. However, it can give a general idea.</p>
+
+<ul>
+  <li>yap<strong>ış</strong> (the way of doing)</li>
+  <li>bak<strong>ış</strong> (the way of looking)</li>
+  <li>sor<strong>uş</strong> (the way of asking)</li>
+</ul>
+
+<p>There are two words derived in this manner that are very common on signs: giriş
+and cıkış (entrance and exit).</p>
+
+<blockquote>
+  <p><strong>Examples</strong></p>
+
+  <p>Bana <strong>bakışını</strong> sevmiyorum. <br />
+I don’t like the way you looked at me.</p>
+
+  <p>Onun <strong>çıkışını</strong> gördün mü? <br />
+Did you see how he left? / Did you see the way he left?</p>
+</blockquote>
+
+<h1 id="sıfat-fiil-verbal-adjectives">Sıfat-fiil: Verbal adjectives</h1>
+
+<h2 id="-yan-en-subject-participles">-(y)an/-en: Subject participles</h2>
+<p>In English, you’ll see this grammar concept associated with the terms relative
+clause and participle.</p>
+
+<p>We use these to form a verbal adjective that describes a noun.
+It is called the subject participle because the described noun is the subject
+performing the action.</p>
+
+<blockquote>
+  <p><strong>Examples</strong></p>
+
+  <p>evime gel<strong>en</strong> misafir<br />
+the guest <strong>who comes / is coming / came</strong> to my house</p>
+
+  <p>uyu<strong>yan</strong> adam <br />
+the man <strong>who sleeps / is sleeping / slept</strong></p>
+</blockquote>
+
+<h3 id="negation">Negation</h3>
+
+<p>Negation works as one might expect.</p>
+
+<blockquote>
+  <p><strong>Example</strong></p>
+
+  <p>uyu<strong>mayan</strong> adam<br />
+the man <strong>who is not sleeping</strong></p>
+</blockquote>
+
+<p><strong>Tip</strong>: In practice, the -y- buffer will always be there since <strong>-ma/me</strong> end
+with a vowel.</p>
+
+<h3 id="tense">Tense</h3>
+<p>The tense is implied by context. It can take the present continuous, simple
+past, and simple present (aka wide present) tenses.</p>
+
+<h2 id="-dik-and-possessor-suffix-object-participles">-dIk and possessor suffix: Object participles</h2>
+
+<p>Recall that <strong>-dIk notation</strong> indicates it could be <strong>-dık -dik -duk -dük</strong>. The
+d also mutates to t when appropriate (consonant mutation).</p>
+
+<p>This adjective is called the object participle, because the noun described by
+the verbal adjective is the object of the verb. Because of this, we also need to
+specify who is performing the action of the verb; this is done by the possessor
+ending.</p>
+
+<blockquote>
+  <p><strong>Examples</strong></p>
+
+  <p>oku<strong>duğum</strong> kitap<br />
+the book <strong>that I read / am reading / read (the past)</strong></p>
+
+  <p>oku<strong>duğun</strong> kitap<br />
+the book <strong>that you read (…same tenses)</strong></p>
+</blockquote>
+
+<p><strong>Tip</strong>: In practice, the <strong>k</strong> in <strong>-dIk</strong> almost always mutates to a <strong>ğ</strong> since all
+of the possessor endings start with a vowel. The only exception is when the
+plural is added to onlar, as below.</p>
+
+<blockquote>
+  <p><strong>Examples (with onlar)</strong></p>
+
+  <p>onların <strong>okuduğu</strong> kitap<br />
+onların <strong>okudukları</strong> kitap<br />
+the book <strong>that they read / am reading / read (past)</strong></p>
+
+  <p>oku<strong>duğun</strong> kitap<br />
+the book <strong>that you read (…same tenses)</strong></p>
+  <h3 id="negation-1">Negation</h3>
+  <p>Negation again works as one would expect.</p>
+</blockquote>
+
+<blockquote>
+  <p><strong>Example</strong></p>
+
+  <p>bak<strong>madığım</strong> adam<br />
+the man <strong>who I am not looking at</strong></p>
+</blockquote>
+
+<h3 id="tense-1">Tense</h3>
+<p>The tense is implied by context. It can take the present continuous, simple
+past, and simple present (aka wide present) tenses.</p>
+
+<h3 id="usage-with-sonra">Usage with sonra</h3>
+
+<p>You will also see this suffix used with the word sonra (“after”), but without the
+possessed ending.</p>
+
+<blockquote>
+  <p><strong>Example</strong></p>
+
+  <p>O kahvaltı yap<strong>tıktan sonra</strong> bir sigara içer.<br />
+After eating breakfast, he smokes a cigarette.</p>
+</blockquote>
+
+<p>Notably, it is not symmetrically used with önce, which uses the <strong>-mAdAn</strong>
+suffix with verbs with our previously described gerund form.</p>
+
+<blockquote>
+  <p><strong>Example</strong></p>
+
+  <p>Uyu<strong>madan önce</strong> kitap okurum.<br />
+Before sleeping, I read books.</p>
+</blockquote>
+
+<h2 id="future-and-reported-past-participles">Future and reported past participles</h2>
+<p>Building upon the two forms we learned above, we can create both object and
+subject participles using the suffixes of both the future and reported past tenses. These tenses
+won’t be covered here, so this section can be skipped if the reader is not
+familiar with them.</p>
+
+<p>Understanding of these derivations follow easily with an understanding of the
+<strong>-acak/ecek</strong> future suffixes and the <strong>-mış/miş/muş/müş</strong> reported past
+suffixes.</p>
+
+<blockquote>
+  <p><strong>Examples (future tense)</strong></p>
+
+  <p>konuşacak adam<br />
+the man who will speak</p>
+
+  <p>konuşacağı adam<br />
+the man he/she will talk to</p>
+
+  <p>adam konuşacak<br />
+the man will talk (normal future tense)</p>
+</blockquote>
+
+<blockquote>
+  <p><strong>Examples (reported past tense)</strong></p>
+
+  <p>kitap <strong>okumuş</strong> çocuk<br />
+the child <strong>who (apparently) read</strong> books</p>
+
+  <p><strong>boşanmış</strong> kadın<br />
+the woman <strong>who (apparently) was divorced</strong></p>
+</blockquote>
+
+<h2 id="other-verbal-adjectives">Other verbal adjectives</h2>
+<p>There are a bunch of other verbal adjectives, often with different meaning.
+There’s a <a href="https://www.dilbilgisi.net/fiilimsi-konu-anlatimi/">Turkish page</a>
+containing some of them here, but they’re less important and often vary in
+meaning phrase-by-phrase.</p>
+
+<h1 id="zarf-fiil-verbal-adverbs">Zarf-fiil: Verbal adverbs</h1>
+<p>This is not intended to comprehensively cover all zarf-fiil, but it covers a
+few of the most common ones.</p>
+
+<h2 id="-eliali-since">-eli/ali: Since</h2>
+<p>This suffix means “since” in the sense of time passing (not “since” as in the
+word “because”, which can also be used in English). It can only be used events
+happening since a specific time duration.</p>
+
+<blockquote>
+  <p><strong>Example</strong></p>
+
+  <p>Okuldan <strong>geleli</strong> beş saat oldu.<br />
+It has been five hours <strong>since I came</strong> from the school.</p>
+</blockquote>
+
+<p>If you want to express the concept of “since” relative to an event, then the
+verb is repeated in the past tense.</p>
+
+<blockquote>
+  <p><strong>Example</strong></p>
+
+  <p>Türkiye’ye <strong>geldim geleli</strong> birçok kişiyle tanıştım.<br />
+I’ve met many people <strong>since I came</strong> to Turkey.</p>
+</blockquote>
+
+<h3 id="subject-of-the-since-clause">Subject of the since-clause</h3>
+<p>The subject is optional, but it can be used to clarify the subject of the since-clause when it cannot be derived from context.</p>
+
+<blockquote>
+  <p><strong>Examples (with pronoun)</strong></p>
+
+  <p><strong>Sen</strong> okuldan gel<strong>eli</strong> beş saat oldu.<br />
+It has been five hours since <strong>you</strong> came from the school.</p>
+</blockquote>
+
+<h2 id="-madanmeden-before-with-önce--without">-madan/meden: before (with önce) / without</h2>
+
+<h3 id="meaning-without">Meaning “without”</h3>
+
+<blockquote>
+  <p><strong>Example</strong></p>
+
+  <p>Maske <strong>takmadan</strong> dışarı çıkmak yasaktır.<br />
+It is forbidden to go out <strong>without wearing</strong> a mask.</p>
+</blockquote>
+
+<h3 id="meaning-before">Meaning “before”</h3>
+
+<blockquote>
+  <p><strong>Example</strong></p>
+
+  <p>Ben polisi aramadan buradan ayrıl.<br />
+Leave this place before I call the police.</p>
+</blockquote>
+
+<h4 id="with-önce">With önce</h4>
+<p>In the section on -dIk, it was explained that “(verb + dIktAn) sonra” could be used to say something that happened after an action. The -madan/meden suffix serves is often seen with <em>önce</em>. With or without önce is essentially the same (to my understanding).</p>
+
+<blockquote>
+  <p><strong>Example</strong></p>
+
+  <p>Çalışmaya başla<strong>madan önce</strong> bir kahve içerim.<br />
+Before studying, I drink a coffee.</p>
+</blockquote>
+
+<h4 id="-madan-meden-modifying-a-negative-verb">-madan/-meden modifying a negative verb</h4>
+<p>There is a second construction using -madan/-meden. In this one, if the modified verb is negative, then the adverb happens first in the sequence of events. This is a bit confusing to explain but easily clarified with equivalent examples. Note the negative suffix in the verbs below.</p>
+
+<blockquote>
+  <p><strong>Example</strong></p>
+
+  <p>Kitap <strong>okumadan</strong> yat<strong>ma</strong>dı.<br />
+Kitap okudu ve yattı. (equivalent)<br />
+He read a book before he slept.</p>
+</blockquote>
+
+<p>A direct English translation can be a bit weird due to the negatives.</p>
+
+<blockquote>
+  <p><strong>Question example</strong></p>
+
+  <p>Siz ne <strong>yapmadan</strong> okula gitmiyorsunuz?<br />
+What do you <strong>do before</strong> going to school?</p>
+</blockquote>
+
+<p>The example could literally be translated as, “you don’t go to school before
+doing what?”</p>
+
+<p><a href="https://youtube.com/watch?v=V_bC-hn7cC8">This video</a> (in Turkish, albeit slow
+Turkish) is a good explanation of this negative construction. Credit goes to
+this video for the examples above.</p>
+
+<h2 id="-ar--maz---er--mez-as-soon-as">-ar -maz / -er -mez: as soon as</h2>
+<p>Note that the title isn’t precisely correct, the set of suffixes is the same as
+those used in the simple present tense, which has a ruleset not within the scope
+of this article. One can think of this construction as simply the positive and
+negative simple present tense third person forms in succession.</p>
+
+<p>Like -eli/ali, the subject is implied by context, but can optionally be
+clarified by a pronoun.</p>
+
+<blockquote>
+  <p><strong>Example</strong></p>
+
+  <p>(Biz) <strong>Dışarıya çıkar çıkmaz</strong> yağmur başladı.<br />
+<strong>As soon as we went out,</strong> it started to rain.</p>
+</blockquote>
+
+<blockquote>
+  <p><strong>Example constructions</strong></p>
+
+  <p>yapar yapmaz<br />
+gelir gelmez<br />
+görür görmez</p>
+</blockquote>
+
+<h2 id="-yarakerek-by">-(y)arak/erek: “by”</h2>
+<p>This adverb indicates that something was achieved in a certain manner.</p>
+
+<blockquote>
+  <p><strong>Example</strong></p>
+
+  <p>Türkçe <strong>öğrenerek</strong> ne yapmayı planlıyorsun?<br />
+What do you plan to do <strong>by learning</strong> Turkish?</p>
+</blockquote>
+
+<p>A good way to remember this is the word <strong>bilerek</strong>, which means “on purpose.”
+But with the literal translation of the suffix, it would mean “by knowing.”</p>
+
+<h2 id="negation-2">Negation</h2>
+<p>Simply add -ma/-me with a y buffer. For example, <strong>istemeyerek</strong>
+(unintentionally, reluctantly, “by not wanting”).</p>
+
+<h2 id="-ıpipupüp-two-actions-in-succession">-ıp/ip/up/üp: two actions in succession</h2>
+<p>Again, notice that the subject is implied in the example sentence below. The
+suffixed verb is the one that occurs first.</p>
+
+<blockquote>
+  <p><strong>Example</strong></p>
+
+  <p>Konuyu <strong>anlatıp pratik</strong> yapacağız.<br />
+We will explain the subject and then do practice.</p>
+</blockquote>
+
+<p>Usually, there is only one usage of -ip in a sentence.</p>
+
+<h3 id="-ip-durmak-idiom">-ip durmak: idiom</h3>
+<p><strong>-ip durmak</strong> means to keep doing something all the time.</p>
+
+<blockquote>
+  <p><strong>Example</strong></p>
+
+  <p>Öksürüp duruyor.<br />
+He’s constantly coughing.</p>
+</blockquote>
+
+<h3 id="difference-from-sonradan">Difference from sonradan</h3>
+<p>Sonradan (“afterwards”) can ostensibly express the same set of sentences, but
+the connotation is slightly different. With -ip, the implication is that one
+thing happened very quickly after another, while with sonradan, the time gap
+could be wider.</p>
+
+<h2 id="further-reference">Further reference</h2>
+<p>The end of Unit 10 in <em>The Delights of Learning Turkish</em> is a decent English
+language resource for these verbal adverbs.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Sim Card Price in Turkey in February 2020]]></title>
+    <link href="http://louisrli.github.io/blog/2020/02/21/sim-card/"/>
+    <updated>2020-02-21T00:00:00+00:00</updated>
+    <id>http://louisrli.github.io/blog/2020/02/21/sim-card</id>
+    <content type="html"><![CDATA[<p>Getting a SIM card in Turkey for short to medium term stays in Turkey is
+straightforward. In this article, I describe my experience with prices in
+<em>February 2020</em> using Turkcell.</p>
+
+<!-- more -->
+
+<p>I bought my SIM card in Fatih. I’m actually not sure if what I got was a good
+deal. Turkcell offers all types of short-term deals for tourists as well. I
+visited three stores in Fatih and they all gave me approximately the same rate
+(some trying to squeeze +/- 10 lira) without the option for any smaller plans.</p>
+
+<p>These rates are for foreigners. You’ll see advertisements for cellphone data at
+amazing prices, but these require a Turkish bank account.</p>
+
+<h2 id="plans">Plans</h2>
+<p>My plan was <strong>20 GB data for 120 lira</strong> (around 20 USD at the time of writing). However,
+it should be noted that the 20 GB is <strong>for one month only</strong>.</p>
+
+<p>Although the SIM card lasts for multiple months, you do need to top up in future
+months. The top-up is at a rate rate that I don’t remember, but it’s much
+cheaper than the initial upfront cost.</p>
+
+<p>I didn’t really keep track of the SMS and call time in the plan, though that’s
+included. It’s 2020, use WhatsApp :)</p>
+
+<h3 id="long-term-stays">Long-term stays</h3>
+<p>It should be noted that the SIM card situation for long-term stays (more than
+120 days) gets much more expensive. You have to pay a foreigner registration fee
+that’s more than 200 USD. I won’t go much into it here, but you can read about
+it <a href="https://toomanyadapters.com/buying-sim-card-turkey/">on this page</a>.</p>
+
+<h2 id="purchasing">Purchasing</h2>
+<p>Bring your passport. It took about ten to fifteen minutes for the guy to finish
+registering everything.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Sahibinden: The Craigslist of Turkey]]></title>
+    <link href="http://louisrli.github.io/blog/2020/02/21/sahibinden/"/>
+    <updated>2020-02-21T00:00:00+00:00</updated>
+    <id>http://louisrli.github.io/blog/2020/02/21/sahibinden</id>
+    <content type="html"><![CDATA[<p><strong>Sahibinden</strong> (literally, “owners”) is the Craigslist equivalent of Turkey.</p>
+
+<!-- more -->
+
+<h2 id="usage">Usage</h2>
+
+<p>In order to respond to listings (at least housing listings, in my experience),
+you do need access to a Turkish cellphone number. The site will ask you to enter
+a verification code that is texted to the Turkish number before you can respond.</p>
+
+<h2 id="housing">Housing</h2>
+<p>Sahibinden’s housing search is top-notch. In addition to the filters that one
+would expect such as flat type and price, it also allows filtering by
+furnished/unfurnished, renting from owner/broker, building age.</p>
+
+<p><img src="/images/travel/sahibinden/example.png" alt="Example map search" /></p>
+
+<p>On a separate topic, finding housing in Istanbul has a number of options. I’d
+recommend reading <a href="https://yabangee.com/finding-a-flat-in-istanbul-a-basic-guide-to-accommodation/">this article</a>, particularly on the difference between renting
+from a broker and an owner.</p>
+
+<p>Note: I do dispute one part of this article. They say that renting through an
+owner usually has higher quality furnishing. At least in Sisli, my experience
+was the opposite: broker flats tended to be newer and have better
+furnishing. Most importantly, there were way more broker listings than owner
+listings, which meant that the options were “better” for my specific needs based
+purely on a higher volume of selection.</p>
+
+<h3 id="avoiding-shady-housing-deals">Avoiding shady housing deals</h3>
+<p>Like Craigslist, Sahibinden actually includes a warning about housing scams,
+though it’s in Turkish. This notification is mostly common sense: don’t wire
+money to anyone you haven’t actually met.</p>
+
+<p>I also found that some ads seemed to reuse pictures from other ads (e.g., two
+flats in different locations with the exact same pictures and different owners).
+Usually, one of them (I believe) is a scam. Longer-term accounts have a
+small award image for how long they’ve been on Sahibinden (e.g., 11 years); the
+shady ones had no such image. I’m not saying all accounts without the award are
+scams, but if you run into two ads with the same pictures, the legitimate one is
+probably the certified one.</p>
+
+<p>My friend that lives in Istanbul also told me a few other things to watch out
+for when using Sahibinden for housing:</p>
+
+<ul>
+  <li>Renting daily flats through Sahibinden is difficult (even short- to
+medium- term can be a bit of a hassle, as many owners want stable tenants.
+However, when renting from a broker, they do like short-term tenants because
+they usually charge the full broker fee of one month’s rent).</li>
+  <li>Posters will often post really nice looking pictures but the apartment
+actually looks a lot worse in person.</li>
+</ul>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[The Best ATM (No-Fee) in Istanbul, Turkey]]></title>
+    <link href="http://louisrli.github.io/blog/2020/02/21/best-atm-in-istanbul-turkey/"/>
+    <updated>2020-02-21T00:00:00+00:00</updated>
+    <id>http://louisrli.github.io/blog/2020/02/21/best-atm-in-istanbul-turkey</id>
+    <content type="html"><![CDATA[<p>The best ATM in Istanbul, Turkey is a coveted title. There’s a lot of banks that
+accept international cards, but some of them will try to extract more money from
+you via service fee or dynamic currency conversion (DCC).</p>
+
+<p>The best ATM is <strong>HSBC</strong> (only 1000 lira at a time, mixed denominations).</p>
+
+<!-- more -->
+
+<h2 id="the-best-atm-hsbc">The Best ATM: HSBC</h2>
+<p>At the moment, HSBC has no extra fees and serves mostly 100 TL bills with some
+50 and 20 TL.</p>
+
+<p>In February 2020, QNB used to allow large transactions, no fees, and serving
+only 100 TL bills, but this is no longer the case as of June 2020.</p>
+
+<p>Depending on the ATM, they may try to apply DCC, so when the DCC menu comes
+up, make sure to click <strong>Istemiyorum</strong> (it was on the left side), which means:
+“I do not want.” Make sure you say no to DCC. DCC is very bad (Google it).</p>
+
+<p>See the table below for a relative comparison.</p>
+
+<h2 id="atm-comparisons">ATM Comparisons</h2>
+<p>Credit for this table goes to <a href="https://www.reddit.com/r/Turkey/comments/cute4k/a_guide_to_turkish_atms_if_you_are_using_a_card/">some anonymous user on
+Reddit</a>, who I’m actually,
+very truly grateful for taking the time to write and do this exploration. As of
+February 2020, I can verify that at least some of these were true, as I tried
+about five ATMs in central Sisli.</p>
+
+<p>If you have any updates or additions to this table, please add them below.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Bank</th>
+      <th>Non-DCC Fee</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>HSBC</td>
+      <td>None</td>
+      <td>Mixed bills</td>
+    </tr>
+    <tr>
+      <td>AKBANK</td>
+      <td>None</td>
+      <td>Only 20 TL bills</td>
+    </tr>
+    <tr>
+      <td>HalkBank</td>
+      <td>None</td>
+      <td>Only 5 TL/10 TL bills</td>
+    </tr>
+    <tr>
+      <td>ZiraatBanksi</td>
+      <td>None</td>
+      <td>Only 10 TL bills</td>
+    </tr>
+    <tr>
+      <td>VakifBank</td>
+      <td>Flat 10 lira fee</td>
+      <td>I went to one and it was 4%.</td>
+    </tr>
+    <tr>
+      <td>QNB Finansbank</td>
+      <td>Yes</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td>Garanti</td>
+      <td>3.5%</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td>Bankamatik</td>
+      <td>2.5%</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td>YapiKredi</td>
+      <td>3%</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td>Denizbank</td>
+      <td>3.5%</td>
+      <td> </td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="fees-on-the-card-side">Fees on the card side</h2>
+<p>This is not really an advertisement, since I don’t really make money
+from this blog.</p>
+
+<p>In addition to the fees charged by the owning bank of the ATM, the owning bank
+of the card might also have foreign transaction fees. I use Charles Schwab (for
+my god-bless USA of bank account), which has no fees. It also waives ATM fees,
+but I’ve actually never been sure if that works for international bank fees such as
+the ones above.</p>
+
+<p>If for whatever reason this inspires you to sign up for Schwab, I have <a href="http://www.schwab.com/public/schwab/nn/refer-prospect.html?refrid=REFERY23JXD3D">this
+referral
+link</a>.</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Staging and production cookies in Next.js]]></title>
+    <link href="http://louisrli.github.io/blog/2019/11/20/staging-and-production-cookies-in-next-js/"/>
+    <updated>2019-11-20T00:00:00+00:00</updated>
+    <id>http://louisrli.github.io/blog/2019/11/20/staging-and-production-cookies-in-next-js</id>
+    <content type="html"><![CDATA[<p>This article describes how add authentication to your
+<a href="https://nextjs.org">Next.js</a> app using cookies and JWT. In this example, we
+use cookies to authenticate against a GraphQL Yoga backend. Additionally, we
+pass parameters based on the deployment stage (local, staging ,or production) of
+our app.</p>
+
+<!--more-->
+
+<h2 id="deploy-stage-environmental-variable">Deploy stage environmental variable</h2>
+<p>In this example, we are using <a href="TODO">Apex Up</a>, which automatically generates an
+environmental variable <code class="language-plaintext highlighter-rouge">UP_STAGE</code>. Depending on your deployment process, you can
+pass in the stage in a similar way.</p>
+
+<p>We also pass in the following environmental variables:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">BACKEND_URI_STAGING</code>: The expected domain of the GraphQL backend in staging</li>
+  <li><code class="language-plaintext highlighter-rouge">BACKEND_URI_PROD</code>: The expected domain of the GraphQL backend in prod</li>
+</ul>
+
+<p>In <code class="language-plaintext highlighter-rouge">next.config.js</code> in the root directory of your Next application:</p>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Set up environmental variables for deployment. </span>
+<span class="c1">// UP_STAGE comes with UP (https://github.com/apex/up-examples/tree/master/pro/env-static)</span>
+<span class="kd">let</span> <span class="nx">backendUri</span> <span class="o">=</span> <span class="dl">'</span><span class="s1">http://localhost:4000</span><span class="dl">'</span><span class="p">;</span>
+<span class="kd">let</span> <span class="nx">cookieDomain</span> <span class="o">=</span> <span class="dl">'</span><span class="s1">localhost</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">if</span> <span class="p">(</span><span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">UP_STAGE</span> <span class="o">===</span> <span class="dl">'</span><span class="s1">staging</span><span class="dl">'</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nx">backendUri</span> <span class="o">=</span> <span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">BACKEND_URI_STAGING</span><span class="p">;</span>
+  <span class="c1">// Using a domain like foo.com includes all subdomains of foo.com.</span>
+  <span class="nx">cookieDomain</span> <span class="o">=</span> <span class="dl">'</span><span class="s1">stage.foo.com</span><span class="dl">'</span><span class="p">;</span>
+<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">UP_STAGE</span> <span class="o">===</span> <span class="dl">'</span><span class="s1">production</span><span class="dl">'</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nx">backendUri</span> <span class="o">=</span> <span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">BACKEND_URI_PROD</span><span class="p">;</span>
+  <span class="nx">cookieDomain</span> <span class="o">=</span> <span class="dl">'</span><span class="s1">stage.foo.com</span><span class="dl">'</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">if</span> <span class="p">(</span><span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">UP_STAGE</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="nx">backendUri</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">throw</span> <span class="k">new</span> <span class="nb">Error</span><span class="p">(</span><span class="dl">'</span><span class="s1">No backend URI found for : </span><span class="dl">'</span> <span class="o">+</span> <span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">UP_STAGE</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">'</span><span class="s1">Using backend URI: </span><span class="dl">'</span> <span class="o">+</span> <span class="nx">backendUri</span><span class="p">);</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="nx">withCss</span><span class="p">({</span>
+  <span class="c1">// target: 'serverless',</span>
+  <span class="na">env</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">upStage</span><span class="p">:</span> <span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">UP_STAGE</span><span class="p">,</span>
+    <span class="nx">backendUri</span><span class="p">,</span>
+    <span class="nx">cookieDomain</span><span class="p">,</span>
+  <span class="p">},</span>
+<span class="p">})</span>
+</code></pre></div></div>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Next.js Typescript Integration with Ant Design (antd)]]></title>
+    <link href="http://louisrli.github.io/blog/2019/11/17/next-js-with-antd/"/>
+    <updated>2019-11-17T00:00:00+00:00</updated>
+    <id>http://louisrli.github.io/blog/2019/11/17/next-js-with-antd</id>
+    <content type="html"><![CDATA[<p>This article describes how to add the <a href="antd.design">Antd</a> library to
+<a href="https://nextjs.org">Next.js</a>.</p>
+
+<p>This is based off the
+<a href="https://github.com/zeit/next.js/tree/canary/examples/with-ant-design">with-ant-design</a>
+example in Next.js.</p>
+
+<!--more-->
+
+<h2 id="next-configuration">Next configuration</h2>
+<p>In <code class="language-plaintext highlighter-rouge">next.config.js</code> in the root directory of your Next application, add the
+following:</p>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/** See https://github.com/zeit/next.js/tree/canary/examples/with-ant-design */</span>
+<span class="kd">const</span> <span class="nx">withCss</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">@zeit/next-css</span><span class="dl">'</span><span class="p">)</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="nx">withCss</span><span class="p">({</span>
+    <span class="na">webpack</span><span class="p">:</span> <span class="p">(</span><span class="nx">config</span><span class="p">,</span> <span class="p">{</span> <span class="nx">isServer</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">isServer</span><span class="p">)</span> <span class="p">{</span>
+      <span class="kd">const</span> <span class="nx">antStyles</span> <span class="o">=</span> <span class="sr">/antd</span><span class="se">\/</span><span class="sr">.*</span><span class="se">?\/</span><span class="sr">style</span><span class="se">\/</span><span class="sr">css.*</span><span class="se">?</span><span class="sr">/</span>
+      <span class="kd">const</span> <span class="nx">origExternals</span> <span class="o">=</span> <span class="p">[...</span><span class="nx">config</span><span class="p">.</span><span class="nx">externals</span><span class="p">]</span>
+      <span class="nx">config</span><span class="p">.</span><span class="nx">externals</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="nx">context</span><span class="p">,</span> <span class="nx">request</span><span class="p">,</span> <span class="nx">callback</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+          <span class="k">if</span> <span class="p">(</span><span class="nx">request</span><span class="p">.</span><span class="nx">match</span><span class="p">(</span><span class="nx">antStyles</span><span class="p">))</span> <span class="k">return</span> <span class="nx">callback</span><span class="p">()</span>
+          <span class="k">if</span> <span class="p">(</span><span class="k">typeof</span> <span class="nx">origExternals</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">===</span> <span class="dl">'</span><span class="s1">function</span><span class="dl">'</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">origExternals</span><span class="p">[</span><span class="mi">0</span><span class="p">](</span><span class="nx">context</span><span class="p">,</span> <span class="nx">request</span><span class="p">,</span> <span class="nx">callback</span><span class="p">)</span>
+          <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="nx">callback</span><span class="p">()</span>
+          <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="p">...(</span><span class="k">typeof</span> <span class="nx">origExternals</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">===</span> <span class="dl">'</span><span class="s1">function</span><span class="dl">'</span> <span class="p">?</span> <span class="p">[]</span> <span class="p">:</span> <span class="nx">origExternals</span><span class="p">),</span>
+      <span class="p">]</span>
+
+      <span class="nx">config</span><span class="p">.</span><span class="nx">module</span><span class="p">.</span><span class="nx">rules</span><span class="p">.</span><span class="nx">unshift</span><span class="p">({</span>
+        <span class="na">test</span><span class="p">:</span> <span class="nx">antStyles</span><span class="p">,</span>
+        <span class="na">use</span><span class="p">:</span> <span class="dl">'</span><span class="s1">null-loader</span><span class="dl">'</span><span class="p">,</span>
+      <span class="p">})</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="nx">config</span>
+  <span class="p">},</span>
+<span class="p">});</span>
+
+</code></pre></div></div>
+
+<p>In <code class="language-plaintext highlighter-rouge">babel.config.js</code>:</p>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="nx">api</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">{</span>
+    <span class="na">presets</span><span class="p">:</span> <span class="p">[</span><span class="dl">'</span><span class="s1">next/babel</span><span class="dl">'</span><span class="p">],</span>
+    <span class="na">plugins</span><span class="p">:</span> <span class="p">[</span>
+      <span class="p">[</span>
+        <span class="dl">"</span><span class="s2">import</span><span class="dl">"</span><span class="p">,</span> <span class="p">{</span>
+          <span class="na">libraryName</span><span class="p">:</span> <span class="dl">'</span><span class="s1">antd</span><span class="dl">'</span><span class="p">,</span>
+          <span class="na">style</span><span class="p">:</span> <span class="dl">'</span><span class="s1">css</span><span class="dl">'</span><span class="p">,</span>
+        <span class="p">}</span>
+      <span class="p">]],</span>
+  <span class="p">};</span>
+<span class="p">};</span>
+
+</code></pre></div></div>
+
+<h2 id="example-usage">Example usage</h2>
+
+<p>We are able to import from both <code class="language-plaintext highlighter-rouge">antd</code> and <code class="language-plaintext highlighter-rouge">antd/lib/&lt;component&gt;</code>.</p>
+
+<div class="language-tsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/*
+ * An example that imports top-level components from 'antd' and also imports
+ * from files under 'antd/lib'.
+ */</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">TreeSelect</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">antd</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">TreeNode</span><span class="p">,</span> <span class="nx">TreeSelectProps</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">antd/lib/tree-select</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">React</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react</span><span class="dl">'</span><span class="p">;</span>
+
+<span class="kd">const</span> <span class="nx">TreeSelectView</span><span class="p">:</span> <span class="nx">React</span><span class="p">.</span><span class="nx">FC</span><span class="o">&lt;</span><span class="nx">TreeSelectProps</span><span class="o">&lt;</span><span class="kr">string</span><span class="p">[]</span><span class="o">&gt;&gt;</span> <span class="o">=</span> <span class="p">(</span><span class="nx">props</span><span class="p">,</span> <span class="nx">ref</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nc">TreeSelect</span>
+      <span class="si">{</span><span class="p">...</span><span class="nx">props</span><span class="si">}</span>
+      <span class="na">treeCheckable</span>
+      <span class="na">treeData</span><span class="p">=</span><span class="si">{</span><span class="p">{}</span><span class="si">}</span>
+      <span class="na">treeDefaultExpandAll</span>
+      <span class="na">style</span><span class="p">=</span><span class="si">{</span><span class="p">{</span> <span class="na">width</span><span class="p">:</span> <span class="mi">300</span> <span class="p">}</span><span class="si">}</span>
+      <span class="na">showCheckedStrategy</span><span class="p">=</span><span class="s">"SHOW_PARENT"</span>
+      <span class="na">ref</span><span class="p">=</span><span class="si">{</span><span class="nx">ref</span><span class="si">}</span>
+    <span class="p">/&gt;</span>
+  <span class="p">);</span>
+<span class="p">};</span>
+
+<span class="k">export</span> <span class="k">default</span> <span class="nx">React</span><span class="p">.</span><span class="nx">forwardRef</span><span class="p">(</span><span class="nx">TreeSelectView</span><span class="p">);</span>
+
+</code></pre></div></div>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[HOC Authentication Redirects with Next.js, GraphQL, and Typescript]]></title>
+    <link href="http://louisrli.github.io/blog/2019/11/17/auth-redirect-next-js/"/>
+    <updated>2019-11-17T00:00:00+00:00</updated>
+    <id>http://louisrli.github.io/blog/2019/11/17/auth-redirect-next-js</id>
+    <content type="html"><![CDATA[<p>This article describes how to redirect the user in
+<a href="https://nextjs.org">Next.js</a> based on whether the user is authenticated
+(logged in) using a properly typed Typescript React <a href="https://reactjs.org/docs/higher-order-components.html">higher-order
+component</a> (HOC).</p>
+
+<p>This can extend to arbitrary conditions on the queried user, such as redirecting
+if the user does not have an active subscription.</p>
+
+<!--more-->
+
+<p>The following Typescript module implements a general HOC that redirects based on
+authentication state by querying the user from the GraphQL backend. It then
+includes two examples:</p>
+<ul>
+  <li>If the user is not logged in, redirect to <code class="language-plaintext highlighter-rouge">/login</code></li>
+  <li>If the user is logged in, redirect to <code class="language-plaintext highlighter-rouge">/dashboard</code></li>
+</ul>
+
+<h2 id="example-hoc-usage">Example HOC Usage</h2>
+<div class="language-tsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="p">{</span> <span class="nx">NextPage</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">next</span><span class="dl">'</span><span class="p">;</span>
+<span class="c1">// CHANGE THIS: Export to the appropriate path.</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">withLoginRedirect</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">../lib/auth</span><span class="dl">'</span><span class="p">;</span>
+
+<span class="kd">const</span> <span class="nx">RequiresLoginPage</span><span class="p">:</span> <span class="nx">NextPage</span> <span class="o">=</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">&lt;</span><span class="nt">div</span><span class="p">&gt;</span>You're logged in<span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;;</span>
+<span class="p">};</span>
+
+<span class="c1">// If the user isn't logged in, this will redirect to `/login`.</span>
+<span class="k">export</span> <span class="k">default</span> <span class="nx">withLoginRedirect</span><span class="p">(</span><span class="nx">RequiresLoginPage</span><span class="p">);</span>
+
+</code></pre></div></div>
+
+<h2 id="implementation">Implementation</h2>
+<div class="language-tsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nx">React</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">NextComponentType</span><span class="p">,</span> <span class="nx">NextPageContext</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">next</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">Router</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">next/router</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">gql</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">graphql-tag</span><span class="dl">'</span><span class="p">;</span>
+
+<span class="cm">/**
+ * YOU DEFINE THESE.
+ *
+ * These variables should be set by you to query for the user and the types
+ * appropriately. I recommend using GraphQL codegen
+ * (https://graphql-code-generator.com/) to generate types from your schema and
+ * queries from other files so that they can be used like so:
+ *
+ * import { User } from '../generated/apollo-client-types';
+ * import {
+ *   LoggedInUserDocument,
+ * } from '../generated/apollo-client-types';
+ *
+ */</span>
+<span class="kr">interface</span> <span class="nx">User</span> <span class="p">{}</span>
+<span class="kd">const</span> <span class="nx">LoggedInUserDocument</span> <span class="o">=</span> <span class="nx">gql</span><span class="s2">`&lt;YOUR QUERY FOR USER OBJECT&gt;`</span><span class="p">;</span>
+
+<span class="cm">/**
+ * A function that queries for the logged in user before rendering the page.
+ * Should be called in getInitialProps. It redirects as desired.
+ *
+ * It allows for redirecting both if the user is not logged in (e.g., redirect
+ * to login page) or redirecting if the user is logged in.
+ *
+ * If not logged in, redirects to the desired route.
+ *
+ * The return value indicates whether logic should continue or not after the
+ * call.
+ */</span>
+<span class="kd">const</span> <span class="nx">redirectBasedOnLogin</span> <span class="o">=</span> <span class="k">async</span> <span class="p">(</span>
+  <span class="nx">ctx</span><span class="p">:</span> <span class="nx">NextPageContext</span><span class="p">,</span>
+  <span class="nx">route</span><span class="p">:</span> <span class="kr">string</span><span class="p">,</span>
+  <span class="nx">redirectIfAuthed</span><span class="p">:</span> <span class="nx">boolean</span>
+<span class="p">):</span> <span class="nb">Promise</span><span class="o">&lt;</span><span class="nx">boolean</span><span class="o">&gt;</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">isLoggedIn</span> <span class="o">=</span> <span class="k">await</span> <span class="nx">ctx</span><span class="p">.</span><span class="nx">apolloClient</span>
+    <span class="p">.</span><span class="nx">query</span><span class="p">({</span>
+      <span class="na">query</span><span class="p">:</span> <span class="nx">LoggedInUserDocument</span><span class="p">,</span>
+      <span class="c1">// Prevent caching issues when logging in/out without refresh.</span>
+      <span class="na">fetchPolicy</span><span class="p">:</span> <span class="dl">'</span><span class="s1">network-only</span><span class="dl">'</span><span class="p">,</span>
+    <span class="p">})</span>
+    <span class="p">.</span><span class="nx">then</span><span class="p">(({</span> <span class="nx">data</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">data</span> <span class="o">||</span> <span class="o">!</span><span class="nx">data</span><span class="p">.</span><span class="nx">loggedInUser</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+      <span class="p">}</span>
+      <span class="k">return</span> <span class="nb">Boolean</span><span class="p">(</span><span class="nx">data</span><span class="p">.</span><span class="nx">loggedInUser</span><span class="p">);</span>
+    <span class="p">})</span>
+    <span class="p">.</span><span class="k">catch</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+    <span class="p">});</span>
+
+  <span class="kd">const</span> <span class="nx">shouldRedirect</span> <span class="o">=</span> <span class="nx">redirectIfAuthed</span> <span class="p">?</span> <span class="nx">isLoggedIn</span> <span class="p">:</span> <span class="o">!</span><span class="nx">isLoggedIn</span><span class="p">;</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">shouldRedirect</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// https://github.com/zeit/next.js/wiki/Redirecting-in-%60getInitialProps%60</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">ctx</span><span class="p">.</span><span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">ctx</span><span class="p">.</span><span class="nx">res</span><span class="p">.</span><span class="nx">writeHead</span><span class="p">(</span><span class="mi">302</span><span class="p">,</span> <span class="p">{</span>
+        <span class="na">Location</span><span class="p">:</span> <span class="nx">route</span><span class="p">,</span>
+      <span class="p">});</span>
+      <span class="nx">ctx</span><span class="p">.</span><span class="nx">res</span><span class="p">.</span><span class="nx">end</span><span class="p">();</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="nx">Router</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">route</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="nb">Promise</span><span class="p">.</span><span class="nx">resolve</span><span class="p">(</span><span class="kc">false</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nb">Promise</span><span class="p">.</span><span class="nx">resolve</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>
+<span class="p">};</span>
+
+<span class="cm">/**
+ * General HOC that allows redirection based on authentication. We should not
+ * expose this: instead export specific routes and redirect combinations.
+ */</span>
+<span class="kd">const</span> <span class="nx">withAuthRedirect</span> <span class="o">=</span> <span class="p">(</span><span class="nx">route</span><span class="p">:</span> <span class="kr">string</span><span class="p">,</span> <span class="nx">redirectIfAuthed</span><span class="p">:</span> <span class="nx">boolean</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">&lt;</span><span class="nx">P</span><span class="p">,</span><span class="o">&gt;</span><span class="p">(</span>
+  <span class="nx">Page</span><span class="p">:</span> <span class="nx">NextComponentType</span><span class="o">&lt;</span><span class="nx">NextPageContext</span><span class="p">,</span> <span class="p">{},</span> <span class="nx">P</span><span class="o">&gt;</span>
+<span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kd">class</span> <span class="kd">extends</span> <span class="nx">React</span><span class="p">.</span><span class="nx">Component</span><span class="o">&lt;</span><span class="nx">P</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="k">static</span> <span class="k">async</span> <span class="nx">getInitialProps</span><span class="p">(</span><span class="na">ctx</span><span class="p">:</span> <span class="nx">NextPageContext</span><span class="p">)</span> <span class="p">{</span>
+      <span class="kd">const</span> <span class="nx">shouldContinue</span> <span class="o">=</span> <span class="k">await</span> <span class="nx">redirectBasedOnLogin</span><span class="p">(</span>
+        <span class="nx">ctx</span><span class="p">,</span>
+        <span class="nx">route</span><span class="p">,</span>
+        <span class="nx">redirectIfAuthed</span>
+      <span class="p">);</span>
+      <span class="c1">// Only continue if we're logged in. Otherwise, it might cause an</span>
+      <span class="c1">// unnecessary call to a downstream getInitialProps that requires</span>
+      <span class="c1">// authentication.</span>
+      <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">shouldContinue</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="p">{};</span>
+      <span class="p">}</span>
+      <span class="k">if</span> <span class="p">(</span><span class="nx">Page</span><span class="p">.</span><span class="nx">getInitialProps</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">Page</span><span class="p">.</span><span class="nx">getInitialProps</span><span class="p">(</span><span class="nx">ctx</span><span class="p">);</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="p">&lt;</span><span class="nc">Page</span> <span class="si">{</span><span class="p">...</span><span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="si">}</span> <span class="p">/&gt;;</span>
+    <span class="p">}</span>
+  <span class="p">};</span>
+<span class="p">};</span>
+
+<span class="cm">/**
+ * HOC that redirects to login page if the user is not logged in.
+ */</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">withLoginRedirect</span> <span class="o">=</span> <span class="nx">withAuthRedirect</span><span class="p">(</span><span class="dl">'</span><span class="s1">/login</span><span class="dl">'</span><span class="p">,</span> <span class="kc">false</span><span class="p">);</span>
+
+<span class="cm">/**
+ * HOC that redirects to the dashboard if the user is logged in.
+ */</span>
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">withDashboardRedirect</span> <span class="o">=</span> <span class="nx">withAuthRedirect</span><span class="p">(</span><span class="dl">'</span><span class="s1">/dashboard</span><span class="dl">'</span><span class="p">,</span> <span class="kc">true</span><span class="p">);</span>
+
+</code></pre></div></div>
+
+<p>Found this helpful or have suggestions? Leave them in the comments below.</p>
+
+<p>Typing Next.js <code class="language-plaintext highlighter-rouge">getInitialProps</code> HOCs is tricky, and I had trouble finding an
+example online.</p>
+
+<h2 id="versions">Versions</h2>
+<p>At the time of writing, this was using Next 9.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Unit testing React Google Analytics (react-ga) with Jest]]></title>
+    <link href="http://louisrli.github.io/blog/2019/11/16/jest-with-react-ga/"/>
+    <updated>2019-11-16T00:00:00+00:00</updated>
+    <id>http://louisrli.github.io/blog/2019/11/16/jest-with-react-ga</id>
+    <content type="html"><![CDATA[<p>This article describes how to unit test a React component using
+<a href="https://github.com/react-ga/react-ga/">react-ga</a>, including globally setting up
+the Jest config to initialize test mode each time.</p>
+
+<!--more-->
+
+<h2 id="initializing-reactga">Initializing ReactGA</h2>
+<p>In your production code, you will initialize react-ga once: most likely whenever
+your page layout is mounted.</p>
+
+<p>In unit tests, you will receive a warning if ReactGA is not initialized:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ReactGA.initialize must be called first or GoogleAnalytics should be loaded
+manually
+</code></pre></div></div>
+
+<p>Instead of initializing manually in each test, we can initialize for all Jest
+tests globally for our frontend by</p>
+
+<p>In <code class="language-plaintext highlighter-rouge">jest.config.js</code> in the root level (note that <code class="language-plaintext highlighter-rouge">&lt;rootDir&gt;</code> is intentional;
+it’s a keyword in the Jest config):</p>
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">setupFiles</span><span class="p">:</span> <span class="p">[</span><span class="dl">'</span><span class="s1">&lt;rootDir&gt;/lib/testutil/setup-jest.js</span><span class="dl">'</span><span class="p">],</span>
+<span class="p">};</span>
+
+</code></pre></div></div>
+
+<p>Next, we have <code class="language-plaintext highlighter-rouge">lib/setup-jest.js</code> (or whatever path you prefer). Per the
+<a href="https://jestjs.io/docs/en/configuration.html#setupfiles-array">setupFiles
+documentation</a>,
+this should run exactly once before each test file:</p>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/**
+ * Run once before every jest test file.
+ *
+ * Suppresses warnings related to ReactGA.
+ */</span>
+<span class="k">import</span> <span class="nx">ReactGA</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react-ga</span><span class="dl">'</span><span class="p">;</span>
+
+<span class="nx">ReactGA</span><span class="p">.</span><span class="nx">initialize</span><span class="p">(</span><span class="dl">'</span><span class="s1">dummy</span><span class="dl">'</span><span class="p">,</span> <span class="p">{</span> <span class="na">testMode</span><span class="p">:</span> <span class="kc">true</span> <span class="p">});</span>
+
+
+</code></pre></div></div>
+
+<h2 id="test-example">Test example</h2>
+<p>Note that we reset the apiCalls before each test still (perhaps there is a clean
+way to get a global <code class="language-plaintext highlighter-rouge">beforeEach</code>, but I didn’t see one that didn’t require some
+level of hackery).</p>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/**
+ * An example of a Jest test in Typescript.
+ */</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">fireEvent</span><span class="p">,</span> <span class="nx">render</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">@testing-library/react</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">ReactGA</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react-ga</span><span class="dl">'</span><span class="p">;</span>
+
+<span class="nx">describe</span><span class="p">(</span><span class="dl">'</span><span class="s1">analytics</span><span class="dl">'</span><span class="p">,</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nx">beforeEach</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">ReactGA</span><span class="p">.</span><span class="nx">testModeAPI</span><span class="p">.</span><span class="nx">resetCalls</span><span class="p">();</span>
+  <span class="p">});</span>
+
+  <span class="nx">it</span><span class="p">(</span><span class="dl">'</span><span class="s1">correctly sends timing analytics</span><span class="dl">'</span><span class="p">,</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kd">const</span> <span class="p">{</span> <span class="nx">getByText</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">render</span><span class="p">(</span>
+      <span class="o">&lt;</span><span class="nx">MyView</span> <span class="o">/&gt;</span>
+    <span class="p">);</span>
+
+    <span class="nx">fireEvent</span><span class="p">.</span><span class="nx">click</span><span class="p">(</span><span class="nx">getByText</span><span class="p">(</span><span class="sr">/somebutton/</span><span class="p">));</span>
+
+    <span class="c1">// An example of testing the timing call.</span>
+    <span class="kd">const</span> <span class="na">timings</span><span class="p">:</span> <span class="nx">number</span><span class="p">[]</span> <span class="o">=</span> <span class="p">[];</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kd">const</span> <span class="nx">call</span> <span class="k">of</span> <span class="nx">ReactGA</span><span class="p">.</span><span class="nx">testModeAPI</span><span class="p">.</span><span class="nx">calls</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="nx">call</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">===</span> <span class="dl">'</span><span class="s1">send</span><span class="dl">'</span> <span class="o">&amp;&amp;</span> <span class="nx">call</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nx">hitType</span> <span class="o">===</span> <span class="dl">'</span><span class="s1">timing</span><span class="dl">'</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">timings</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">call</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nx">timingValue</span><span class="p">);</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="nx">expect</span><span class="p">(</span><span class="nx">timings</span><span class="p">).</span><span class="nx">toEqual</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">9</span><span class="p">]);</span>
+  <span class="p">});</span>
+<span class="p">});</span>
+
+
+</code></pre></div></div>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Unit testing Apollo React hooks with MockedProvider]]></title>
+    <link href="http://louisrli.github.io/blog/2019/11/16/apollo-mockedprovider-unit-test/"/>
+    <updated>2019-11-16T00:00:00+00:00</updated>
+    <id>http://louisrli.github.io/blog/2019/11/16/apollo-mockedprovider-unit-test</id>
+    <content type="html"><![CDATA[<p>This article describes how to unit test a React component with Apollo queries
+using React Hooks, Jest, the Apollo-provided 
+<a href="https://www.apollographql.com/docs/react/development-testing/testing/#mockedprovider">MockedProvider</a>, and <a href="https://testing-library.com/docs/react-testing-library/api">React Testing Library</a>.</p>
+
+<!--more-->
+
+<p>When set up, <code class="language-plaintext highlighter-rouge">MockedProvider</code> asserts that any requests that are passed in its
+setup are called. That is, if you pass in that certain queries are going to be
+called with certain variables, the test will fail if it’s not called in exactly
+the same way.</p>
+
+<h2 id="wrapper-library-without-redux">Wrapper library (without Redux)</h2>
+<div class="language-tsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="p">{</span> <span class="nx">MockedProvider</span><span class="p">,</span> <span class="nx">MockedResponse</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">@apollo/react-testing</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">React</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react</span><span class="dl">'</span><span class="p">;</span>
+
+<span class="kr">interface</span> <span class="nx">TestConfig</span> <span class="p">{</span>
+  <span class="nl">apolloMocks</span><span class="p">?:</span> <span class="nx">MockedResponse</span><span class="p">[];</span>
+<span class="p">}</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">ApolloWrapper</span> <span class="o">=</span> <span class="p">({</span>
+  <span class="nx">apolloMocks</span> <span class="o">=</span> <span class="p">[],</span>
+<span class="p">}:</span> <span class="nx">TestConfig</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">({</span> <span class="nx">children</span> <span class="p">}:</span> <span class="kr">any</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nc">MockedProvider</span> <span class="na">mocks</span><span class="p">=</span><span class="si">{</span><span class="nx">apolloMocks</span><span class="si">}</span><span class="p">&gt;</span><span class="si">{</span><span class="nx">children</span><span class="si">}</span><span class="p">&lt;/</span><span class="nc">MockedProvider</span><span class="p">&gt;</span>
+  <span class="p">);</span>
+<span class="p">};</span>
+
+</code></pre></div></div>
+
+<h2 id="wrapper-library-with-redux">Wrapper library (with Redux)</h2>
+<p><a href="redux.js.org">Redux</a> is commonly used with react, and one can also set up a
+provider with a store. Note that we use
+<a href="https://github.com/piotrwitek/typesafe-actions">typesafe-actions</a> in this
+example.</p>
+
+<div class="language-tsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cm">/*
+ * These Redux functions should probably be in a different, production library,
+ * but they're included here for illustration.
+ */</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">combineReducers</span><span class="p">,</span> <span class="nx">createStore</span><span class="p">,</span> <span class="nx">Store</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">redux</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">StateType</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">typesafe-actions</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">myReducer</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">path/to/my/reducer</span><span class="dl">'</span><span class="p">;</span>
+
+<span class="kd">const</span> <span class="nx">rootReducer</span> <span class="o">=</span> <span class="nx">combineReducers</span><span class="p">({</span>
+  <span class="na">reducer</span><span class="p">:</span> <span class="nx">myReducer</span><span class="p">,</span>
+<span class="p">});</span>
+
+<span class="k">export</span> <span class="kd">type</span> <span class="nx">RootState</span> <span class="o">=</span> <span class="nx">StateType</span><span class="o">&lt;</span><span class="k">typeof</span> <span class="nx">rootReducer</span><span class="o">&gt;</span><span class="p">;</span>
+
+<span class="kd">const</span> <span class="nx">makeStore</span> <span class="o">=</span> <span class="p">(</span><span class="nx">initialState</span> <span class="o">=</span> <span class="p">{}):</span> <span class="nx">Store</span><span class="o">&lt;</span><span class="nx">RootState</span><span class="o">&gt;</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nx">createStore</span><span class="p">(</span><span class="nx">rootReducer</span><span class="p">,</span> <span class="nx">initialState</span><span class="p">);</span>
+<span class="p">};</span>
+
+<span class="c1">// Test wrapper code.</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">MockedProvider</span><span class="p">,</span> <span class="nx">MockedResponse</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">@apollo/react-testing</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">React</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">Provider</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react-redux</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">Store</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">redux</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">import</span> <span class="nx">makeStore</span><span class="p">,</span> <span class="p">{</span> <span class="nx">RootState</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">./store</span><span class="dl">'</span><span class="p">;</span>
+
+<span class="kr">interface</span> <span class="nx">TestConfig</span> <span class="p">{</span>
+  <span class="nl">initialState</span><span class="p">?:</span> <span class="nb">Partial</span><span class="o">&lt;</span><span class="nx">RootState</span><span class="o">&gt;</span><span class="p">;</span>
+  <span class="nl">store</span><span class="p">?:</span> <span class="nx">Store</span><span class="o">&lt;</span><span class="nx">RootState</span><span class="o">&gt;</span><span class="p">;</span>
+  <span class="nl">apolloMocks</span><span class="p">?:</span> <span class="nx">MockedResponse</span><span class="p">[];</span>
+<span class="p">}</span>
+
+<span class="k">export</span> <span class="kd">const</span> <span class="nx">ReduxApolloWrapper</span> <span class="o">=</span> <span class="p">({</span>
+  <span class="nx">initialState</span> <span class="o">=</span> <span class="p">{},</span>
+  <span class="nx">store</span> <span class="o">=</span> <span class="nx">makeStore</span><span class="p">(</span><span class="nx">initialState</span><span class="p">),</span>
+  <span class="nx">apolloMocks</span> <span class="o">=</span> <span class="p">[],</span>
+<span class="p">}:</span> <span class="nx">TestConfig</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">({</span> <span class="nx">children</span> <span class="p">}:</span> <span class="kr">any</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nc">Provider</span> <span class="na">store</span><span class="p">=</span><span class="si">{</span><span class="nx">store</span><span class="si">}</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nc">MockedProvider</span> <span class="na">mocks</span><span class="p">=</span><span class="si">{</span><span class="nx">apolloMocks</span><span class="si">}</span><span class="p">&gt;</span><span class="si">{</span><span class="nx">children</span><span class="si">}</span><span class="p">&lt;/</span><span class="nc">MockedProvider</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nc">Provider</span><span class="p">&gt;</span>
+  <span class="p">);</span>
+<span class="p">};</span>
+
+</code></pre></div></div>
+
+<h2 id="test-example">Test example</h2>
+<p>This is an example of a test written using <a href="jestjs.io">Jest</a>.</p>
+
+<div class="language-tsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nx">gql</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">graphql-tag</span><span class="dl">'</span><span class="p">;</span>
+
+<span class="nx">test</span><span class="p">(</span><span class="dl">'</span><span class="s1">does what it should</span><span class="dl">'</span><span class="p">,</span> <span class="k">async</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">mocks</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="na">request</span><span class="p">:</span> <span class="p">{</span>
+        <span class="na">query</span><span class="p">:</span> <span class="nx">gql</span><span class="s2">`&lt;your expected query here&gt;`</span><span class="p">,</span>
+        <span class="na">variables</span><span class="p">:</span> <span class="p">{</span>
+          <span class="na">myVariable</span><span class="p">:</span> <span class="dl">'</span><span class="s1">foo</span><span class="dl">'</span><span class="p">,</span>
+        <span class="p">}</span>
+      <span class="p">},</span>
+      <span class="na">result</span><span class="p">:</span> <span class="p">{</span>
+        <span class="na">data</span><span class="p">:</span> <span class="p">{</span>
+          <span class="c1">// Mock out the return response here. You can also have `result`</span>
+          <span class="c1">// return a function if you want to do more complicated things.</span>
+        <span class="p">},</span>
+      <span class="p">},</span>
+    <span class="p">},</span>
+  <span class="p">];</span>
+
+
+  <span class="kd">const</span> <span class="p">{</span> <span class="nx">getByText</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">render</span><span class="p">(</span>
+    <span class="p">&lt;</span><span class="nc">MyComponentWithApolloQuery</span>  <span class="p">/&gt;,</span>
+    <span class="p">{</span>
+      <span class="na">wrapper</span><span class="p">:</span> <span class="nx">ReduxApolloWrapper</span><span class="p">({</span> <span class="na">apolloMocks</span><span class="p">:</span> <span class="nx">MOCKS</span> <span class="p">}),</span>
+    <span class="p">}</span>
+  <span class="p">);</span>
+
+  <span class="nx">expect</span><span class="p">(</span><span class="nx">getByText</span><span class="p">(</span><span class="sr">/someSubstringRegex/</span><span class="p">)).</span><span class="nx">not</span><span class="p">.</span><span class="nx">toBeVisible</span><span class="p">();</span>
+
+  <span class="c1">// This test will implicitly fail here if Apollo is called, for example, with</span>
+  <span class="c1">// a variable value for `myVariable` other than `foo`.</span>
+<span class="p">});</span>
+
+
+
+</code></pre></div></div>
+
+<h2 id="errors-and-warnings">Errors and warnings</h2>
+
+<h3 id="client-not-in-context">Client not in context</h3>
+<p>For some reason, <code class="language-plaintext highlighter-rouge">MockedProvider</code> would not work properly for me in React
+Testing Library the way that was suggested by the documentation. I kept getting
+this error:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Invariant Violation: Could not find "client" in the context or passed in as an
+option. Wrap the root component in an &lt;ApolloProvider&gt;, or pass an ApolloClient
+instance in via options.
+</code></pre></div></div>
+
+<p>In the end, <a href="https://spectrum.chat/apollo/apollo-client/mockedprovider-doesnt-inject-client-in-context~a17546fa-d73c-4b4b-8237-c81680799ebb">this Spectrum
+thread</a>
+helped me to resolve the issue.</p>
+
+<h3 id="add-typename-warnings">Add typename warnings</h3>
+<p>I never really figured out how to solve these when I was using <a href="https://graphql-code-generator.com/">GraphQL
+codegen</a>, as the fragments that are
+generated don’t contain typenames. You’ll likely see warning below, for which
+I’ve currently not solved this issue (though there are some solutions <a href="https://github.com/apollographql/react-apollo/issues/1747">proposed here</a>).</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>You're using fragments in your queries, but either don't have the addTypename:
+        true option set in Apollo Client, or you are trying to write a fragment to the store without the __typename.
+         Please turn on the addTypename option and include __typename when writing fragments so that Apollo Client
+         can accurately match fragments.
+</code></pre></div></div>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Is Couchsurfing Safe? (and other common questions)]]></title>
+    <link href="http://louisrli.github.io/blog/2018/06/24/is-couchsurfing-safe-and-other-common-questions/"/>
+    <updated>2018-06-24T00:00:00+01:00</updated>
+    <id>http://louisrli.github.io/blog/2018/06/24/is-couchsurfing-safe-and-other-common-questions</id>
+    <content type="html"><![CDATA[<p><a href="http://couchsurfing.com">Couchsurfing</a> is a site that connects travelers to local hosts in a city.
+As long as both the traveler and host agree, the traveler stays with the host free of charge. 
+Although the traveler stays for free, experienced couchsurfers don’t view the site as a way to find
+free lodging but instead as an opportunity to spend time with a local.</p>
+
+<p>I usually try to Couchsurf when I travel, though it’s not always possible depending on the popularity of the destination. At the time of writing, I’ve stayed with about ten hosts through my travels.</p>
+
+<p>This post is targeted towards people who are curious about using Couchsurfing as a guest but unsure
+what to expect from the experience.</p>
+
+<!-- more -->
+
+<!-- I have a [travel-related YouTube
+channel](https://www.youtube.com/playlist?list=PLtD-FIua473Cf6Ylh3PeoEmoq3c6BJH0S).
+Subscribe! -->
+
+<h2 id="is-couchsurfing-safe">Is Couchsurfing safe?</h2>
+<p>The most common question is: is Couchsurfing safe?</p>
+
+<p>The answer is yes, but use caution. You’re signing up to stay in a stranger’s home, so you
+definitely want to research your host beforehand. A well-reviewed host is a pretty safe bet.</p>
+
+<p>Couchsurfing works on a reference system; both hosts and guests provide references after the
+exchange. Personally, I only look for hosts that have a decent number of references (five or more).
+By definition, this also increases the chances that they’re willing to accept guests.</p>
+
+<p>However, navigating references can be tricky. Even if a guest had a slightly bad experience,
+negative references are rare; guests don’t want to receive a negative reference in return.
+This has two implications.</p>
+
+<p>First, even a single negative
+reference, for both a host or a guest, is considered a major red flag – something very egregious
+must have happened. Second, finding out whether a
+host is problematic requires carefully reading reviews. Since guests may tiptoe around directly
+negative feedback, it’s important to analyze for any hints of negativity dispersed among
+compliments (e.g., host was too controlling, didn’t show up, etc.).</p>
+
+<p>As an unfortunate reality of the world, Couchsurfing can be more difficult for females.  Many
+articles describe unwanted solicitation from hosts. My recommendation is to prefer female
+couchsurfing hosts, although those are harder to find. Otherwise, carefully read other females’
+reviews for a particular host.</p>
+
+<h2 id="what-do-you-do-with-your-hosts">What do you do with your hosts?</h2>
+<p>There’s no definitive answer - it completely depends on your host.</p>
+
+<p>Different hosts have different personalities, schedules, budgets, and so on. All of them will talk
+to you, but not all will actually hang out. Your host is <em>not</em> obligated to be your tour guide.</p>
+
+<p>A non-exhaustive spectrum of hosts:</p>
+
+<ul>
+  <li>Hosts that don’t hang out outside of home, often because they host couchsurfers non-stop and
+can’t afford time-wise to show every guest around the city</li>
+  <li>Hosts that work during the day and want to get dinner in the evening</li>
+  <li>Hosts that will spend a whole day to take you somewhere or show you around</li>
+</ul>
+
+<p>To illustrate this concretely, here are things I’ve done in the past with my hosts:</p>
+
+<ul>
+  <li>Hiked at a national park and got stuck (Taiwan)</li>
+  <li>Walked around for an hour and had a beer (Copenhagen)</li>
+  <li>Went to a Noel Gallagher concert (Copenhagen)</li>
+  <li>Talked for a few hours, staying only one night (Petah Tiqva)</li>
+  <li>Cooked dinner (Venice)</li>
+  <li>Ate ramen at home (Seoul)</li>
+</ul>
+
+<h2 id="what-are-the-accommodations">What are the accommodations?</h2>
+<p>Similarly, your accommodations vary depending on host.</p>
+
+<p>Hosts will be very annoyed if you treat Couchsurfing like a hostel or hotel. Be considerate, clean
+up after yourself, and so on: they’re not obligated to provide any services. After all, they’re
+letting you crash in their home <em>for free.</em> In this vein, most hosts do not give their guests a key,
+rightfully not wanting a stranger to freely have access to their home.</p>
+
+<p>A few examples of my past accommodations:</p>
+
+<ul>
+  <li>A couch, many times</li>
+  <li>Shared a bed with my host, twice (not in any sexual fashion)</li>
+  <li>A private room with a bed in a penthouse apartment (super rare, obviously!)</li>
+  <li>A guy who had 10+ couchsurfing guests in his apartment at any time with people sleeping
+everywhere</li>
+</ul>
+
+<h2 id="what-can-i-do-to-find-a-host-to-stay-with">What can I do to find a host to stay with?</h2>
+<p>Couchsurfing is a two-way street. The host needs to want you to stay with them, and you need to want
+stay with the host. From their perspective, they’re inviting a stranger into their home, so you want
+to present yourself as a respectful and considerate guest.</p>
+
+<p>Couchsurfing hosts, especially in popular destinations, are often spammed with grammar-mangled,
+copy-pasted requests. Your goal is to stand out from this crowd.</p>
+
+<h3 id="write-a-personalized-well-constructed-message">Write a personalized, well-constructed message</h3>
+<p>Writing a personalized message request will maximize your chances of finding a host. Hosts want to
+know that you’re asking to stay with <em>them</em>, not just mass-spamming for a free stay.  In fact, many
+hosts’ profiles will ask guests to include some “passphrase” statement to ensure that the requester
+has actually read the profile.</p>
+
+<p>When I write a request, I always start strong with a few sentences personalized to the host’s
+profile, then I write a
+short two or three sentence copy-paste about my visit in the city. If the host wants to find out
+more about me, the rest is on my Couchsurfing profile.</p>
+
+<p>Here’s an example of a message I sent that introduces me briefly, indicates that I read their
+profile, and states that I’m flexible about hanging out. The first paragraph is personalized (the
+host’s profile mentions something about Latin dances); the second one is copy-pasted.</p>
+
+<blockquote>
+  <p>Hey (host name),</p>
+
+  <p>My name is Louis, I’m also in IT (I work in the USA as a programmer). I’m going to be in
+Istanbul for a few days before I travel to Erbil to teach breakdancing, would you be willing to host
+me for two nights? Unfortunately, I don’t know any Latin dances :(</p>
+
+  <p>I’ve couchsurfed many times in the past, and I’m a very respectful and clean guest. I’m also down to
+hang out or not depending on your schedule – these are weekday dates so I expect you might be
+working. My schedule is very open to spend time together, except that I may be meeting up with other
+dancers one of the nights.</p>
+</blockquote>
+
+<h3 id="have-a-well-fleshed-out-profile">Have a well-fleshed out profile</h3>
+<p>If you are trying to find a host for the first time, having a populated profile is crucial. Again,
+from the perspective of the host, they can only base their opinion on what they see:
+profile, messages, references. Although I’ve never hosted, I’ve been told by previous hosts of three
+profile factors that often contribute to accepting requests:</p>
+
+<ul>
+  <li><strong>References</strong>: It’s chicken-and-egg, but it’s hard for hosts to host you if no one is vouching
+for you. For those starting off, ask any friends who have Couchsurfed in the past to leave a
+reference. Another option is to meet up with someone in the local Couchsurfing community and get
+a reference.</li>
+  <li><strong>“Proof of existence”:</strong> My profile contains a link to this site and my YouTube channel. I’ve had
+multiple hosts tell me that simply poking around these links made me more trustworthy.</li>
+  <li><strong>Couchsurfing verification:</strong> Couchsurfing has an option to upload and verify your identity for a
+fee. One of my previous hosts said that they have a strong preference for verified
+profiles. I’ve never done verification, but it helps a lot if your profile is just starting off.</li>
+</ul>
+
+<h2 id="should-i-bring-a-gift">Should I bring a gift?</h2>
+<p>Gifting is universal across cultures, and I recommend bringing or buying a gift for your host
+– even something small like candy. It’s the thought that counts.</p>
+
+<h2 id="concluding-thoughts">Concluding thoughts</h2>
+<p>Overall, I’ve had extremely positive experiences with Couchsurfing and would highly recommend
+it to anyone. I’ve made countless great memories through Couchsurfing, but I’ve only had one “bad
+experience,” where the host was very controlling. Even that was still fun overall.</p>
+
+<p>In my mind, there are two minor downsides to Couchsurfing:</p>
+
+<ul>
+  <li>Social requirement: during my travels, I sometimes just don’t feel like socializing.</li>
+  <li>Less schedule flexibility to go “home.” Since most hosts don’t give you a key, you often have to
+coordinate with your host. This is especially bad if you’re jetlagged, and you need to get
+creative to find a place to sleep during the day.</li>
+</ul>
+
+<p>I’m a semi-experienced Couchsurfing guest, but my experience is still a small sample of that of
+more experienced individuals, such as the power hosts who have hosted over one hundred guests.</p>
+
+<p>If you have any other questions about Couchsurfing, feel free to leave them in the comments below.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Transportation from Dharamshala Airport to McLeod Ganj]]></title>
+    <link href="http://louisrli.github.io/blog/2018/06/22/transportation-from-dharamshala-airport-to-mcleod-ganj/"/>
+    <updated>2018-06-22T00:00:00+01:00</updated>
+    <id>http://louisrli.github.io/blog/2018/06/22/transportation-from-dharamshala-airport-to-mcleod-ganj</id>
+    <content type="html"><![CDATA[<p><em>Last updated: June 2018</em></p>
+
+<p>This post describes what to expect when going from the Dharamshala Airport to MacLeod Ganj,
+Dharamshala, India – the central tourist area of Dharamshala.</p>
+
+<!-- more -->
+
+<p>We took a taxi from the airport to McLeod Ganj for 800 rupees, though the exact price depends on the
+location of your residence. Go to the prepaid taxi booth and talk to the booth. There will be a number of drivers and a clerk outside of the stand. The drivers may try to
+circumvent you from speaking to the booth, ignore them temporarily and get the slip signed off. In
+our case, we ended up getting a lower price confirmed by the booth.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Transportation from Agra to Delhi Airport]]></title>
+    <link href="http://louisrli.github.io/blog/2018/06/21/transportation-from-agra-to-delhi-airport/"/>
+    <updated>2018-06-21T00:00:00+01:00</updated>
+    <id>http://louisrli.github.io/blog/2018/06/21/transportation-from-agra-to-delhi-airport</id>
+    <content type="html"><![CDATA[<p><em>Last updated: June 2018</em></p>
+
+<p>This post describes how to get from <a href="https://wikitravel.org/en/Agra">Agra, India</a>, to New Delhi,
+India. It focuses on how to get to the airport in the same day, though all of the advice applies
+more generally to getting from one city to the other.</p>
+
+<p>While attending a wedding in Agra, I had to get from Agra to Delhi in the same day in order to catch
+a 14:00 flight.  The distance from Agra to Delhi is quite large (3-5 hour drive depending on
+traffic), so I did some research on the most economical methods of reaching the Delhi airport. This
+is a summary of my research that will hopefully help other travelers evaluate their options.</p>
+
+<!-- more -->
+
+<h2 id="traditional-taxi-service">Traditional taxi service</h2>
+
+<p><strong>Cost: ~4000 rupees</strong></p>
+
+<p>It’s easy to get a bunch of conflicting prices here. Definitely don’t book through a hotel (hostel
+will probably give you better price) as they will way overcharge you – hotels’ quoted prices 
+were around 200 USD.</p>
+
+<p>We used <a href="https://www.tripadvisor.in/Attraction_Review-g297683-d13188303-Reviews-D_K_Car_and_Driver_India-Agra_Agra_District_Uttar_Pradesh.html">D.K. Car and Driver India</a>, which was the first result on TripAdvisor at the time of our trip. I called him using the hotel phone, but he also responded to my Facebook messages in about an hour, which was advantageous since I was trying to book at 4 PM the day before. Everything went seamlessly, so I’m willing to stick in my endorsement for D.K. here.</p>
+
+<p>We paid around 4000 rupees, which at the time of writing, was about 60 USD. The trip was four hours.</p>
+
+<h2 id="savaari--clearcar--other-taxi-aggregator">Savaari / ClearCar / other taxi aggregator</h2>
+
+<p><strong>Cost: ~2500 rupees</strong>. The sites don’t give an exact amount, but this is an estimation based on
+their formulas for trips over 80km.</p>
+
+<p>There are a number of taxi aggregators in India (Savaari, ClearCar, etc.) that do “outstation” (out of town) trips. These are essentially like Uber, except that you book the car in advance, and it shows up at the specified time. Savaari was suggested by a native Indian
+acquaintance of mine, as he was using it to leave Agra after the wedding.</p>
+
+<p>After doing some research of reviews, it
+seems that these services aren’t fully reliable; many reviews contained instances of drivers being late,
+cancelling the hour beforehand, intentionally taking longer routes, etc. While online reviews are
+likely biased toward the bad instances, it does suggest that these services could be hit-or-miss
+(although it must be “hit” enough that a native Indian suggested it to us).</p>
+
+<p>Despite being the best balance of convenience and price, I ended up not going with this option due
+to the potential time unreliability, especially for a 7AM flight. However, <strong>if you simply want to get from
+Agra to Delhi as a group with looser time constraints, Savaari is both cheaper and more convenient
+than public transportation.</strong></p>
+
+<h2 id="public-transportation">Public transportation</h2>
+
+<p><strong>Cost: ~1000 rupees / person.</strong> Air-conditioned class train tickets ranged from 700 to 1200 rupees.</p>
+
+<p>Public transportation here means train, metro, and bus/short-distance cab.  For the trains, view
+up-to-date timetables and book tickets at <a href="https://www.irctc.co.in/">IRCTC</a>. I’m not sure if they
+take international cards; I’ve seen varying reports online.</p>
+
+<p>In general, public transportation (train/metro) is a good option for Agra to Delhi.</p>
+
+<p>For getting to the airport specifically, it becomes more complicated. We ran into a myriad of issues trying to plan a public transit route. The fastest 2.25 hour express trains from Agra to Delhi ran only in the evening, which didn’t work for our 14:00 flight, so the train would be least 3 hours. Additionally, the trains for our timetable only went to Hazrat Nizmuddin station, which would require either a bus/cab to the airport or airport metro line.</p>
+
+<p>To summarize, the trip would involve:</p>
+
+<ul>
+  <li>Residence in Agra to Agra Cantt station (<strong>10-20 min</strong>)</li>
+  <li>Agra Cantt to New Delhi Station or Hazrat Nizmuddin station (<strong>2.25 to 3.5 hours</strong>, depending on what
+train you catch)</li>
+  <li>If at New Delhi Station, metro to airport. If at Hazrat Nizmuddin station, figure out a way to get
+to the airport metro, then head to airport (either way, <strong>30 min to 1 hour</strong>, and traffic is bad).</li>
+</ul>
+
+<p>If you have an evening flight, then public transportation to the airport is a viable
+option, as you have more time flexibility without waking up at an ungodly hour. If traveling solo,
+this is the cheapest option by far, but if your group
+has two or more people and you have time flexibility, a Savaari cab becomes about the same
+price per person.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Dubrovnik Bus Departure Schedule (Croatia)]]></title>
+    <link href="http://louisrli.github.io/blog/2015/09/02/dubrovnik-bus-departure-schedule/"/>
+    <updated>2015-09-02T20:15:33+01:00</updated>
+    <id>http://louisrli.github.io/blog/2015/09/02/dubrovnik-bus-departure-schedule</id>
+    <content type="html"><![CDATA[<p>This article contains the bus schedule for departures from Dubrovonik, Croatia. Dubrovonik is a
+popular coastal destination (and the filming site of King’s Landing for the <em>Game of Thrones</em> TV
+show!).</p>
+
+<p><em>Last updated: 1 September 2015</em></p>
+
+<!-- more -->
+
+<p>Timetables may differ between on and off seasons. My trip was at the beginning of September, which is on
+the border of on and off seasons.</p>
+
+<h2 id="timetable">Timetable</h2>
+
+<p>If you find an updated timetable during your travels, please send it to me to update this page for
+other travelers.</p>
+
+<p class="minipic"><img src="/images/travel/dubrovonikbus/timetable.jpg" alt="Bus timetable" /></p>
+
+<h2 id="destinations">Destinations</h2>
+
+<p><strong>International:</strong></p>
+
+<ul>
+  <li>Sarajevo</li>
+  <li>Medugorje</li>
+  <li>Kotor</li>
+  <li>Budva</li>
+  <li>Trieste</li>
+  <li>Herceg Novi</li>
+  <li>Ulcinj</li>
+  <li>Podgorica</li>
+  <li>Zenica</li>
+  <li>Mos</li>
+  <li>Ivanica - Trebinje</li>
+  <li>Skopje</li>
+  <li>Ljubljana</li>
+  <li>Petrovac</li>
+  <li>Bar</li>
+  <li>Tivat</li>
+  <li>Frankfurt</li>
+  <li>Tuzla</li>
+  <li>Beograd (Belgrade)</li>
+</ul>
+
+<p><strong>Domestic:</strong></p>
+
+<ul>
+  <li>Metkovic</li>
+  <li>Ploce</li>
+  <li>Orebic</li>
+  <li>Korcula - Vela Luka</li>
+  <li>Makarska</li>
+  <li>Split</li>
+  <li>Trogir</li>
+  <li>Sibenik</li>
+  <li>Zadar</li>
+  <li>Rijeka</li>
+  <li>Pula</li>
+  <li>Karlovac</li>
+  <li>Zagreb</li>
+  <li>Osijek, Vinkovci, S. Brod</li>
+  <li>Varazdin</li>
+  <li>Vrgorac</li>
+  <li>Otric-Seoci</li>
+</ul>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Dubrovnik's Best Currency Exchange (Croatia)]]></title>
+    <link href="http://louisrli.github.io/blog/2015/09/02/dubrovnik-best-currency-exchange/"/>
+    <updated>2015-09-02T20:15:33+01:00</updated>
+    <id>http://louisrli.github.io/blog/2015/09/02/dubrovnik-best-currency-exchange</id>
+    <content type="html"><![CDATA[<p>This article contains information about the best place to exchange currency in Dubrovnik, Croatia:
+<strong>OK Travel Agency</strong>.</p>
+
+<p>Dubrovnik is a popular coastal destination (and the filming site of King’s Landing for the <em>Game of Thrones</em> TV
+show!).</p>
+
+<!-- more -->
+
+<h2 id="directions">Directions</h2>
+
+<p>The travel agency is located at <strong>Obala Stjepana Radića 32, Dubrovnik, Croatia</strong>.</p>
+
+<p>It is very
+convenient to reach when arriving in Dubrovonik by bus or boat, because it is located next to the main
+port and central bus station.</p>
+
+<p>It is further from Old Town, and you will take one of the buses to the central bus station or
+port (most of them stop here), then walk to the agency.</p>
+
+<p class="minipic"><img src="/images/travel/dubrovonikcurrency/oktravel.jpg" alt="Outside of OK Travel Agency" /></p>
+
+<div style="text-align: center;">
+<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d5868.382096555248!2d18.08878992153864!3d42.65730670065322!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x134c7525b02fd643%3A0x9fe451262d4d1f78!2sObala+Stjepana+Radi%C4%87a+32%2C+20000%2C+Dubrovnik%2C+Croatia!5e0!3m2!1sen!2sus!4v1441228112407" width="400" height="300" frameborder="0" style="border:0" allowfullscreen=""></iframe>
+</div>
+
+<h2 id="rates">Rates</h2>
+
+<p>I received exchange rates from OK Travel Agency that were <strong>0.8% from
+the midmarket rate</strong> (the rate from internet searches). There was <strong>no commission</strong>.</p>
+
+<p>Rates change over time, but in September 2015, the midmarket rate was 7.55 kuna to the euro. I
+received 7.49 kuna to the euro. \((1 - 7.49 / 7.55 = 0.079)\)</p>
+
+<p><em>Last updated: 2 September 2015</em></p>
+
+]]></content>
+  </entry>
+  
+</feed>

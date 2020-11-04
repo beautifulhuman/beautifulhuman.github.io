@@ -1,0 +1,590 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Blog - Louis Li</title>
+	<meta name="author" content="Louis Li">
+
+	
+	<meta name="description" content="
+  
+  
+
+      
+  
+    
+      
+	
+		
+
+
+
+
+
+
+
+
+
+
+		
+
+
+	react
+
+
+
+		
+	
+	Typesafe Unit Testing of GraphQL Resolvers in TypeScript
+	
+
+          This post g...">
+	
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="fb:admins" content="100001696373537" />
+
+	<link href="http://feeds.feedburner.com/louisligithub" rel="alternate" title="Louis Li" type="application/atom+xml">
+	
+	<link rel="canonical" href="http://louisrli.github.io/blog/">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+        <script type="text/javascript"
+            src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+          </script>
+	<link href='https://fonts.googleapis.com/css?family=Open+Sans:400italic,400,700' rel='stylesheet' type='text/css'>
+	<!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="https://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="https://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({
+          google_ad_client: "ca-pub-5225926150102880",
+          enable_page_level_ads: true
+     });
+</script>
+
+</head>
+
+
+<body>
+	<div class="container">
+		<div class="left-col">
+			<div class="intrude-less">
+			<header id="header" class="inner"><div class="profilepic">
+	<script type="text/javascript">
+		$(function(){
+                    $('.profilepic').append("<img src='https://www.gravatar.com/avatar/" + "9f050cf96c6cc933141f0242e5b723fd" + "?s=160' alt='Profile Picture' style='width: 160px;' />");
+		});
+	</script>
+</div>
+<hgroup>
+  <h1><a href="/">Louis Li</a></h1>
+  
+</hgroup>
+
+<p class="subtitle"></p>
+<nav id="main-nav"><ul class="main-navigation">
+  <li><a href="/blog">Blog</a></li>
+  <li><a href="/blog/categories/projects">Sideprojects</a></li>
+  <li><a href="/publications">Publications</a></li>
+  <li><a href="http://github.com/louisrli">Github</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+  <li><a href="mailto:pong@outlook.com">Contact</a></li>
+</ul>
+
+
+<section class="aboutme">
+  <p>
+    Harvard student and developer.
+  </p>
+</section>
+</nav>
+<nav id="sub-nav">
+	<div class="social">
+		
+		
+		<a class="github" href="https://github.com/louisrli" title="GitHub">GitHub</a>
+		
+		
+		<a class="rss" href="http://feeds.feedburner.com/louisligithub" title="RSS">RSS</a>
+		
+	</div>
+</nav>
+</header>				
+			</div>
+		</div>	
+		<div class="mid-col">
+			<div class="mid-col-container">
+				<div id="content" class="inner"><div class="blog-index">
+  
+  
+
+      
+  
+    <article>
+      
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+
+<time datetime="2020-10-09T00:00:00+01:00" data-updated="true" itemprop="datePublished"></time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/react/'>react</a>
+
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2020/10/09/unit-testing-graphql-resolver-typescript/" itemprop="url">Typesafe Unit Testing of GraphQL Resolvers in TypeScript</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+
+          <p>This post gives a code example on how to unit test a GraphQL resolver with Jest
+in TypeScript. In order to make the testing typesafe, we use <a href="https://graphql-code-generator.com/">GraphQL Code
+Generator</a>.</p>
+
+
+		<a href="/blog/2020/10/09/unit-testing-graphql-resolver-typescript/" class="more-link">Read more</a>
+	</div>
+
+
+    </article>
+  
+
+      
+  
+    <article>
+      
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+
+<time datetime="2020-10-09T00:00:00+01:00" data-updated="true" itemprop="datePublished"></time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/react/'>react</a>
+
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2020/10/09/unit-testing-graphql-middleware-typescript/" itemprop="url">Unit Testing of GraphQL Middleware in TypeScript</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+
+          <p>This post gives a code example on how to unit test a GraphQL middleware in
+TypeScript with Jest, using the Express GraphQL middleware resolver
+<a href="https://github.com/maticzav/graphql-shield">graphql-shield</a> as an example. It
+should generalize to other middlewares.</p>
+
+
+		<a href="/blog/2020/10/09/unit-testing-graphql-middleware-typescript/" class="more-link">Read more</a>
+	</div>
+
+
+    </article>
+  
+
+      
+        
+
+      
+  
+    <article>
+      
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+
+<time datetime="2020-07-01T00:00:00+01:00" data-updated="true" itemprop="datePublished"></time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/istanbul/'>istanbul</a>, <a class='category' href='/blog/categories/travel/'>travel</a>
+
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2020/07/01/istanbul-to-sile/" itemprop="url">Traveling from Istanbul to Şile by Bus</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+
+          <p>The intention of this post is to document how to travel from Istanbul to Şile by
+bus. At the time of writing, there do not appear to be any English resources for
+this route. The official IETT app and Google Maps both document this incorrectly.</p>
+
+
+		<a href="/blog/2020/07/01/istanbul-to-sile/" class="more-link">Read more</a>
+	</div>
+
+
+    </article>
+  
+
+      
+  
+    <article>
+      
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+
+<time datetime="2020-06-04T00:00:00+01:00" data-updated="true" itemprop="datePublished"></time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/react/'>react</a>
+
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2020/06/04/react-mathjax/" itemprop="url">Using MathJax with React</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+
+          <p>This post describes how to use React (Typescript) and MathJax.</p>
+
+
+		<a href="/blog/2020/06/04/react-mathjax/" class="more-link">Read more</a>
+	</div>
+
+
+    </article>
+  
+
+      
+  
+    <article>
+      
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+
+<time datetime="2020-06-04T00:00:00+01:00" data-updated="true" itemprop="datePublished"></time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/react/'>react</a>
+
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2020/06/04/react-dynamic-script-hook/" itemprop="url">Dynamic Script Loading in React with Hooks</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+
+          <p>This post describes how to dynamically load a script by adding a script tag to
+your document using React Hooks.</p>
+
+
+		<a href="/blog/2020/06/04/react-dynamic-script-hook/" class="more-link">Read more</a>
+	</div>
+
+
+    </article>
+  
+
+      
+  
+    <article>
+      
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+
+<time datetime="2020-04-20T00:00:00+01:00" data-updated="true" itemprop="datePublished"></time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/turkish/'>turkish</a>
+
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2020/04/20/turkish-fiilimsi-verbal-derivatives/" itemprop="url">Fiilimsi: Turkish Verbal Nouns, Adjectives, and Adverbs</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+
+          <style>
+blockquote {
+  font-style: unset;
+}
+
+blockquote hr {
+  margin: 0.3em 0;
+}
+
+blockquote p:first-child {
+  font-size: 12px;
+  border-bottom: 1px solid #ddd;
+}
+
+/* In case we want to bold the example headers later. */
+blockquote p:first-child strong {
+  font-weight: unset;
+}
+
+blockquote p {
+  margin-top: 0.3em !important;
+  margin-bottom: 0.3em !important;
+}
+
+</style>
+
+<p>This post talks about the concept of “fiilimsi”, which are nouns, adjectives, or
+adverbs derived from verbs. In English, for example, these include gerunds
+(“<em>Running</em> is fun”) or participle adjectives (“The dog <em>that I saw</em>”).</p>
+
+<p>This post is not intended to be a comprehensive resource of all fiilimsi.
+There are three categories of fiilimsi:</p>
+
+<ol>
+  <li><strong>isim-fiil</strong>: verbal noun</li>
+  <li><strong>sıfat-fiil</strong>: verbal adjective</li>
+  <li><strong>zarf-fiil</strong>: verbal adverb</li>
+</ol>
+
+<p>There’s a noticeable lack of English language resources on the internet about
+certain Turkish language topics. There’s a few articles about verbal derivations
+but only with minimal details. I hope this post fills that niche.</p>
+
+<p>Almost all of this material was derived from a lesson on the <a href="https://discord.me/turkceogrenelim">Türkçe Öğrenelim
+Discord</a>. Feel free to join the community
+and support them on <a href="https://www.patreon.com/letslearnturkish">Patreon</a>.</p>
+
+
+		<a href="/blog/2020/04/20/turkish-fiilimsi-verbal-derivatives/" class="more-link">Read more</a>
+	</div>
+
+
+    </article>
+  
+
+      
+  
+    <article>
+      
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+
+<time datetime="2020-02-21T00:00:00+00:00" data-updated="true" itemprop="datePublished"></time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/istanbul/'>istanbul</a>, <a class='category' href='/blog/categories/travel/'>travel</a>
+
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2020/02/21/sim-card/" itemprop="url">Sim Card Price in Turkey in February 2020</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+
+          <p>Getting a SIM card in Turkey for short to medium term stays in Turkey is
+straightforward. In this article, I describe my experience with prices in
+<em>February 2020</em> using Turkcell.</p>
+
+
+		<a href="/blog/2020/02/21/sim-card/" class="more-link">Read more</a>
+	</div>
+
+
+    </article>
+  
+
+      
+  
+    <article>
+      
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+
+<time datetime="2020-02-21T00:00:00+00:00" data-updated="true" itemprop="datePublished"></time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/istanbul/'>istanbul</a>, <a class='category' href='/blog/categories/travel/'>travel</a>
+
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2020/02/21/sahibinden/" itemprop="url">Sahibinden: The Craigslist of Turkey</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+
+          <p><strong>Sahibinden</strong> (literally, “owners”) is the Craigslist equivalent of Turkey.</p>
+
+
+		<a href="/blog/2020/02/21/sahibinden/" class="more-link">Read more</a>
+	</div>
+
+
+    </article>
+  
+
+      
+  
+    <article>
+      
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+
+<time datetime="2020-02-21T00:00:00+00:00" data-updated="true" itemprop="datePublished"></time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/istanbul/'>istanbul</a>, <a class='category' href='/blog/categories/travel/'>travel</a>
+
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2020/02/21/best-atm-in-istanbul-turkey/" itemprop="url">The Best ATM (No-Fee) in Istanbul, Turkey</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+
+          <p>The best ATM in Istanbul, Turkey is a coveted title. There’s a lot of banks that
+accept international cards, but some of them will try to extract more money from
+you via service fee or dynamic currency conversion (DCC).</p>
+
+<p>The best ATM is <strong>HSBC</strong> (only 1000 lira at a time, mixed denominations).</p>
+
+
+		<a href="/blog/2020/02/21/best-atm-in-istanbul-turkey/" class="more-link">Read more</a>
+	</div>
+
+
+    </article>
+  
+  <div class="pagination">
+    
+      <a class="prev" href="2">&larr; Older</a>
+    
+    <a href="/blog/archives">Blog Archives</a>
+    
+  </div>
+</div>
+</div>
+			</div>
+			<footer id="footer" class="inner"><p>
+  Copyright &copy; 2020 - Louis Li
+</p>
+
+Theme originally by <a href="http://shashankmehta.in/archive/2012/greyshade.html">Shashank Mehta</a>
+</footer>
+			<script src="/javascripts/slash.js"></script>
+<script src="/javascripts/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+	$('.fancybox').fancybox();
+})(jQuery);
+</script> <!-- Delete or comment this line to disable Fancybox -->
+
+
+<script type="text/javascript">
+      var disqus_shortname = 'llgithub';
+      
+        
+        var disqus_script = 'count.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'https://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+	<script type="text/javascript">
+		var _gaq = _gaq || [];
+		_gaq.push(['_setAccount', 'UA-32823730-1']);
+		_gaq.push(['_trackPageview']);
+
+		(function() {
+			var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+			ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+			var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+		})();
+	</script>
+
+
+
+
+		</div>
+	</div>
+</body>
+</html>

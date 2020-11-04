@@ -3,16 +3,44 @@
 <html>
 <head>
 	<meta charset="utf-8">
-	<title>About - Louis Li</title>
+	<title>Blog - page 6 - Louis Li</title>
 	<meta name="author" content="Louis Li">
 
 	
 	<meta name="description" content="
   
+  
+
+      
+  
     
-    About
-    
-    I recently graduated from Harvard University (class of 2015) with a degree in Computer Science and Mathematics. This si...">
+      
+	
+		
+
+
+
+
+
+
+
+
+
+
+		
+
+
+	exploits, projects
+
+
+
+		
+	
+	Nebula Shell Exploits (Solutions 10-14)
+	
+
+          Overview
+This i...">
 	
 
   <!-- http://t.co/dKP3o1e -->
@@ -23,7 +51,7 @@
 
 	<link href="http://feeds.feedburner.com/louisligithub" rel="alternate" title="Louis Li" type="application/atom+xml">
 	
-	<link rel="canonical" href="http://louisrli.github.io/">
+	<link rel="canonical" href="http://louisrli.github.io/blog/blog/posts/6/">
 	<link href="/favicon.png" rel="shortcut icon">
 	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
 	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
@@ -95,72 +123,124 @@
 		</div>	
 		<div class="mid-col">
 			<div class="mid-col-container">
-				<div id="content" class="inner"><article class="page">
-  <div class="landing-body">
-    
-    <h1 class="title">About</h1>
-    
-    <div class="entry-content"><p>I recently graduated from Harvard University (class of 2015) with a degree in Computer Science and Mathematics. This site has my <a href="/blog/categories/projects/">sideprojects</a> and occasional <a href="blog">blog posts</a>.</p>
+				<div id="content" class="inner"><div class="blog-index">
+  
+  
 
-<h2 id="academic-interests">Academic Interests</h2>
+      
+  
+    <article>
+      
+	<div class="meta">
+		<div class="date">
 
-<ul>
-  <li><strong>Security:</strong> (and programming languages) I was formerly an undergraduate researcher with the
-<a href="http://www.cs.harvard.edu/pl/">programming languages group</a> under <a href="http://people.seas.harvard.edu/~chong/">Stephen
-Chong</a>.</li>
-  <li><strong>Human-computer interaction:</strong> I was formerly an undergraduate researcher at the <a href="http://iis.seas.harvard.edu">Intelligent
-Interactive Systems Group</a> under <a href="http://www.eecs.harvard.edu/~kgajos/">Krzysztof
-Gajos</a>. <a href="/publications">(Publications)</a>.</li>
-  <li><strong>Teaching:</strong> I have been a TA for:
-    <ul>
-      <li><em>Fun and Games with Discrete Math</em> (January 2013),</li>
-      <li><em>CS20: Discrete Mathematics for Computer Science</em> (Spring 2013),</li>
-      <li><em>CS121: Introduction to the Theory of Computation</em> (Fall 2013),</li>
-      <li><em>CS152: Programming Languages</em> (Spring 2014),</li>
-      <li><em>CS121: Introduction to the Theory of Computation</em> (Fall 2014)</li>
-    </ul>
-  </li>
-</ul>
+
+
+
+
+
+
+
+
+<time datetime="2012-06-28T00:00:00+01:00" data-updated="true" itemprop="datePublished"></time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/exploits/'>exploits</a>, <a class='category' href='/blog/categories/projects/'>projects</a>
+
+
 </div>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2012/06/28/nebula1/" itemprop="url">Nebula Shell Exploits (Solutions 10-14)</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+
+          <h1 id="overview">Overview</h1>
+<p>This is the second post for my solutions of <a href="http://exploit-exercises.com/nebula">Exploit Exercises</a></p>
+
+<h2 id="level-10">Level 10</h2>
+<p><strong>Description</strong> <a href="http://exploit-exercises.com/nebula/level10">(full)</a>: Read a token file with the password to the target account. A suid program uses <code class="language-plaintext highlighter-rouge">access()</code> to upload a file to a host.</p>
+
+<p>According to <a href="http://linux.die.net/man/2/access">man access()</a>, there’s a race condition with this usage of the function:</p>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="go">man access
+Warning: Using access() to check if a user is authorized to, for example, open a file before actually doing so
+using open(2) creates a security hole, because the user might exploit the short time interval between
+checking and opening the file to manipulate it. For this reason, the use of this system call should be
+avoided. (In the example just described, a safer alternative would be to temporarily switch the process's
+effective user ID to the real ID and then call open(2).)</span></code></pre></figure>
+
+
+		<a href="/blog/2012/06/28/nebula1/" class="more-link">Read more</a>
+	</div>
+
+
+    </article>
+  
+
+      
+  
+    <article>
+      
+	<div class="meta">
+		<div class="date">
+
+
+
+
+
+
+
+
+
+<time datetime="2012-06-22T00:00:00+01:00" data-updated="true" itemprop="datePublished"></time></div>
+		<div class="tags">
+
+
+	<a class='category' href='/blog/categories/exploits/'>exploits</a>, <a class='category' href='/blog/categories/projects/'>projects</a>
+
+
+</div>
+		
+	</div>
+	<h1 class="title" itemprop="name"><a href="/blog/2012/06/22/nebula0/" itemprop="url">Nebula Shell Exploits (Solutions 00-09)</a></h1>
+	<div class="entry-content" itemprop="articleBody">
+
+          <h1 id="overview">Overview</h1>
+
+<p>Nebula is a series of “capture the flag” exercises from <a href="http://exploit-exercises.com/nebula">Exploit Exercises</a>. I’ve been reading <a href="http://www.amazon.com/Hacking-The-Art-Exploitation-Edition/dp/1593271441/">Hacking: The Art of Exploitation 2e</a> – this was a good supplement.</p>
+
+<p>The provided Ubuntu VM has 20 levels (00 - 19). The goal of each level is to run the <code class="language-plaintext highlighter-rouge">getflag</code> command on a target account, either by exploiting a <a href="http://en.wikipedia.org/wiki/Setuid">suid</a> program or obtaining the password.</p>
+
+<h1 id="solutions">Solutions</h1>
+
+<p>To keep things shorter, a link to the full description is provided with each level. The full description contains relevant source code.</p>
+
+<p>There’s no copy paste for Ubuntu Server VMs, but I included the output when it supplemented the solution.</p>
+
+<h2 id="level-0">Level 0</h2>
+
+<p><strong>Description</strong> <a href="http://exploit-exercises.com/nebula/level00">(full)</a>: Find a file with setuid permissions.</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nv">$ </span>find / <span class="nt">-perm</span> /u+s</code></pre></figure>
+
+<p>Search the root directory for files based on permissions. The file <code class="language-plaintext highlighter-rouge">/bin/.../flag00</code> looks suspicious.</p>
+
+
+		<a href="/blog/2012/06/22/nebula0/" class="more-link">Read more</a>
+	</div>
+
+
+    </article>
+  
+  <div class="pagination">
+    
+    <a href="/blog/archives">Blog Archives</a>
+    
+    <a class="next" href="5">Newer &rarr;</a>
+    
   </div>
-
-  <div class="recent-post-container">
-    <h1 class="title">Recent Posts</h1>
-    
-      
-      <div class="recent-post">
-        <h4 itemprop="name"><a href="/blog/2020/10/09/unit-testing-graphql-resolver-typescript/" itemprop="url">
-             » Typesafe Unit Testing of GraphQL Resolvers in TypeScript
-        </a></h4>
-      </div>
-    
-      
-      <div class="recent-post">
-        <h4 itemprop="name"><a href="/blog/2020/10/09/unit-testing-graphql-middleware-typescript/" itemprop="url">
-             » Unit Testing of GraphQL Middleware in TypeScript
-        </a></h4>
-      </div>
-    
-      
-        
-      
-      <div class="recent-post">
-        <h4 itemprop="name"><a href="/blog/2020/07/01/istanbul-to-sile/" itemprop="url">
-             » Traveling from Istanbul to Şile by Bus
-        </a></h4>
-      </div>
-    
-      
-      <div class="recent-post">
-        <h4 itemprop="name"><a href="/blog/2020/06/04/react-mathjax/" itemprop="url">
-             » Using MathJax with React
-        </a></h4>
-      </div>
-    
-  </div>
-</article>
-
-
+</div>
 </div>
 			</div>
 			<footer id="footer" class="inner"><p>

