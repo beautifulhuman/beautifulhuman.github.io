@@ -1,0 +1,346 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Chrome Extensions: Taking Screenshots with Javascript/jQuery, HTML5, Canvas - Louis Li</title>
+	<meta name="author" content="Louis Li">
+
+	
+	<meta name="description" content="
+
+
+
+
+
+	Chrome Extensions: Taking Screenshots with Javascript/jQuery, HTML5, Canvas
+        Capturing previews of a webpage or its DOM elements 
+	Th...">
+	
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="fb:admins" content="100001696373537" />
+
+	<link href="http://feeds.feedburner.com/louisligithub" rel="alternate" title="Louis Li" type="application/atom+xml">
+	
+	<link rel="canonical" href="http://louisrli.github.io/blog/2013/01/16/javascript-canvas-screenshot/">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+        <script type="text/javascript"
+            src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+          </script>
+	<link href='https://fonts.googleapis.com/css?family=Open+Sans:400italic,400,700' rel='stylesheet' type='text/css'>
+	<!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="https://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="https://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({
+          google_ad_client: "ca-pub-5225926150102880",
+          enable_page_level_ads: true
+     });
+</script>
+
+</head>
+
+
+<body>
+	<div class="container">
+		<div class="left-col">
+			<div class="intrude-less">
+			<header id="header" class="inner"><div class="profilepic">
+	<script type="text/javascript">
+		$(function(){
+                    $('.profilepic').append("<img src='https://www.gravatar.com/avatar/" + "9f050cf96c6cc933141f0242e5b723fd" + "?s=160' alt='Profile Picture' style='width: 160px;' />");
+		});
+	</script>
+</div>
+<hgroup>
+  <h1><a href="/">Louis Li</a></h1>
+  
+</hgroup>
+
+<p class="subtitle"></p>
+<nav id="main-nav"><ul class="main-navigation">
+  <li><a href="/blog">Blog</a></li>
+  <li><a href="/blog/categories/projects">Sideprojects</a></li>
+  <li><a href="/publications">Publications</a></li>
+  <li><a href="http://github.com/louisrli">Github</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+  <li><a href="mailto:pong@outlook.com">Contact</a></li>
+</ul>
+
+
+<section class="aboutme">
+  <p>
+    Harvard student and developer.
+  </p>
+</section>
+</nav>
+<nav id="sub-nav">
+	<div class="social">
+		
+		
+		<a class="github" href="https://github.com/louisrli" title="GitHub">GitHub</a>
+		
+		
+		<a class="rss" href="http://feeds.feedburner.com/louisligithub" title="RSS">RSS</a>
+		
+	</div>
+</nav>
+</header>				
+			</div>
+		</div>	
+		<div class="mid-col">
+			<div class="mid-col-container">
+				<div id="content" class="inner"><script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- Github top leaderboard -->
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-5225926150102880"
+     data-ad-slot="1340213627"
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+
+<article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+	<h1 class="title" itemprop="name">Chrome Extensions: Taking Screenshots with Javascript/jQuery, HTML5, Canvas</h1>
+        <h3 class="subtitle" itemprop="subtitle">Capturing previews of a webpage or its DOM elements </h3>
+	<div class="entry-content" itemprop="articleBody"><p>This post describes how to create a completely accurate image preview of a DOM element on the page by using Javascript in a Chrome extension. I stumbled upon this issue while working on a web implementation of <a href="http://www.mendeley.com/research/enhanced-area-cursors-reducing-fine-pointing-demands-people-motor-impairments/">click-and-cross (Findlater et al.)</a> for research. This process consists of two subproblems.</p>
+
+<ol>
+  <li>How can we take a screenshot of the current page using Javascript?</li>
+  <li>Given the screenshot of part of the page, how can we crop out our element from the screenshot?</li>
+</ol>
+
+<!-- more -->
+
+<p>If you’re only interested in the code and not the explanation of the problem, <a href="#code">click here</a>.</p>
+
+<h2 id="overview">Overview</h2>
+
+<h3 id="the-screenshot-problem-imperfect-solutions">The screenshot problem: imperfect solutions</h3>
+
+<p>Given only plain Javascript and a DOM, outside of the context of a Chrome extension it’s not possible to take a completely accurate screenshot of the page. This is explained in a <a href="http://stackoverflow.com/questions/4912092/using-html5-canvas-javascript-to-take-screenshots/">Stack Overflow question</a>.</p>
+
+<p>The top answer offers a solution that uses a script called <a href="http://html2canvas.hertzen.com/">html2canvas</a>. Another potential solution is <a href="http://www.aplweb.co.uk/blog/js/magnifying-glass/">Magnifying Glass</a>, which works by duplicating the HTML content of the body and re-rendering it in a “magnifying glass” (<a href="http://www.aplweb.co.uk/blog/js/magnifying-glass/demo.html">demo</a>). However, Magnifying Glass will conflict with any HTML-embedded Javascript, and html2canvas produces an imperfect replication of the page.</p>
+
+<p>The solution in this post is dependent on the fact that the Chrome extension API provides a function, <code class="language-plaintext highlighter-rouge">chrome.tabs.captureVisibleTab()</code> <a href="http://developer.chrome.com/extensions/tabs.html#method-captureVisibleTab">(docs)</a>, for taking a screenshot of the visible part of a tab.</p>
+
+<h3 id="picking-out-the-element-from-the-screenshot">Picking out the element from the screenshot</h3>
+
+<p>Since the <code class="language-plaintext highlighter-rouge">captureVisibleTab()</code> function only gives us a portion of the screen, we can’t simply use the offset (top, left) of the rendered element.</p>
+
+<p>For example, in the figure below, let the shaded part of the screen be the part of the screen that we capture, and the <strong>Message Passing</strong> header, boxed in yellow, be the element that we want to capture. Given the position of the screenshot relative to the origin of the window (the black dots), we’ll compute the position of our element relative to the origin of the screenshot (the blue dots), then crop out that region.</p>
+
+<ul class="thumbnails" style="text-align: center;">
+    <li class="span6" style="display:inline-block; float: none;">
+    <a href="/images/chrome-screenshot-demo.png" class="thumbnail">
+        <img src="/images/chrome-screenshot-demo.png" alt="Diagram of the element that we want to capture relative to the screenshot" />
+    </a>
+    </li>
+</ul>
+
+<h2 id="code">Code</h2>
+
+<p>Chrome extensions have two distinct parts involving Javascript: the extension (runs in the background) and the content scripts (runs on a certain page and can access the DOM). Content scripts <em>cannot</em> access most of the Chrome extension API (such as <code class="language-plaintext highlighter-rouge">captureVisibleTab()</code>), but extensions and content scripts can communicate indirectly through <a href="http://developer.chrome.com/extensions/messaging.html">message passing</a>.</p>
+
+<p>Make sure that these permissions are included in your <code class="language-plaintext highlighter-rouge">manifest.json</code>, and add the functions to one of your content scripts.</p>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">"permissions": ["tabs", "&lt;all_urls&gt;"],
+"background": {
+    "scripts": ["background.js"]
+},</code></pre></figure>
+
+<p><code class="language-plaintext highlighter-rouge">background.js</code>:</p>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">chrome</span><span class="p">.</span><span class="nx">extension</span><span class="p">.</span><span class="nx">onMessage</span><span class="p">.</span><span class="nx">addListener</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">request</span><span class="p">,</span> <span class="nx">sender</span><span class="p">,</span> <span class="nx">sendResponse</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">request</span><span class="p">.</span><span class="nx">name</span> <span class="o">==</span> <span class="dl">'</span><span class="s1">screenshot</span><span class="dl">'</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">chrome</span><span class="p">.</span><span class="nx">tabs</span><span class="p">.</span><span class="nx">captureVisibleTab</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span> <span class="kc">null</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">dataUrl</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">sendResponse</span><span class="p">({</span> <span class="na">screenshotUrl</span><span class="p">:</span> <span class="nx">dataUrl</span> <span class="p">});</span>
+        <span class="p">});</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="kc">true</span><span class="p">;</span>
+<span class="p">});</span></code></pre></figure>
+
+<p><code class="language-plaintext highlighter-rouge">screenshot.js</code> (content script):</p>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="cm">/* Takes a screenshot and uses it in a callback as a canvas */</span>
+<span class="nx">takeScreenshot</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">callback</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">chrome</span><span class="p">.</span><span class="nx">extension</span><span class="p">.</span><span class="nx">sendMessage</span><span class="p">({</span><span class="na">name</span><span class="p">:</span> <span class="dl">'</span><span class="s1">screenshot</span><span class="dl">'</span><span class="p">},</span> <span class="kd">function</span><span class="p">(</span><span class="nx">response</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">data</span> <span class="o">=</span> <span class="nx">response</span><span class="p">.</span><span class="nx">screenshotUrl</span><span class="p">;</span>
+        <span class="kd">var</span> <span class="nx">canvas</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="dl">'</span><span class="s1">canvas</span><span class="dl">'</span><span class="p">);</span>
+        <span class="kd">var</span> <span class="nx">img</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Image</span><span class="p">();</span>
+        <span class="nx">img</span><span class="p">.</span><span class="nx">onload</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="nx">canvas</span><span class="p">.</span><span class="nx">width</span> <span class="o">=</span> <span class="nx">$</span><span class="p">(</span><span class="nb">window</span><span class="p">).</span><span class="nx">width</span><span class="p">();</span>
+            <span class="nx">canvas</span><span class="p">.</span><span class="nx">height</span> <span class="o">=</span> <span class="nx">$</span><span class="p">(</span><span class="nb">window</span><span class="p">).</span><span class="nx">height</span><span class="p">()</span>
+            <span class="nx">canvas</span><span class="p">.</span><span class="nx">getContext</span><span class="p">(</span><span class="dl">"</span><span class="s2">2d</span><span class="dl">"</span><span class="p">).</span><span class="nx">drawImage</span><span class="p">(</span><span class="nx">img</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">canvas</span><span class="p">.</span><span class="nx">width</span><span class="p">,</span> <span class="nx">canvas</span><span class="p">.</span><span class="nx">height</span><span class="p">);</span>
+
+            <span class="kd">var</span> <span class="nx">$canvas</span> <span class="o">=</span> <span class="nx">$</span><span class="p">(</span><span class="nx">canvas</span><span class="p">);</span>
+            <span class="nx">$canvas</span><span class="p">.</span><span class="nx">data</span><span class="p">(</span><span class="dl">'</span><span class="s1">scrollLeft</span><span class="dl">'</span><span class="p">,</span> <span class="nx">$</span><span class="p">(</span><span class="nb">document</span><span class="p">.</span><span class="nx">body</span><span class="p">).</span><span class="nx">scrollLeft</span><span class="p">());</span>
+            <span class="nx">$canvas</span><span class="p">.</span><span class="nx">data</span><span class="p">(</span><span class="dl">'</span><span class="s1">scrollTop</span><span class="dl">'</span><span class="p">,</span> <span class="nx">$</span><span class="p">(</span><span class="nb">document</span><span class="p">.</span><span class="nx">body</span><span class="p">).</span><span class="nx">scrollTop</span><span class="p">());</span>
+
+            <span class="c1">// Perform callback after image loads</span>
+            <span class="nx">callback</span><span class="p">(</span><span class="nx">$canvas</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="nx">img</span><span class="p">.</span><span class="nx">src</span> <span class="o">=</span> <span class="nx">data</span><span class="p">;</span>
+    <span class="p">});</span>
+<span class="p">}</span></code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="cm">/* Returns a canvas containing a screenshot of $element */</span>
+<span class="nx">renderPreview</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">$element</span><span class="p">,</span> <span class="nx">$screenshotCanvas</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">previewCanvas</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="dl">'</span><span class="s1">canvas</span><span class="dl">'</span><span class="p">);</span>
+    <span class="nx">previewCanvas</span><span class="p">.</span><span class="nx">width</span> <span class="o">=</span> <span class="nx">$element</span><span class="p">.</span><span class="nx">width</span><span class="p">();</span>
+    <span class="nx">previewCanvas</span><span class="p">.</span><span class="nx">height</span> <span class="o">=</span> <span class="nx">$element</span><span class="p">.</span><span class="nx">height</span><span class="p">();</span>
+
+    <span class="c1">// Calculate the correct position of the element on the canvas</span>
+    <span class="kd">var</span> <span class="nx">prevTop</span> <span class="o">=</span> <span class="nx">$element</span><span class="p">.</span><span class="nx">offset</span><span class="p">().</span><span class="nx">top</span> <span class="o">-</span> <span class="nx">$screenshotCanvas</span><span class="p">.</span><span class="nx">data</span><span class="p">(</span><span class="dl">'</span><span class="s1">scrollTop</span><span class="dl">'</span><span class="p">);</span>
+    <span class="kd">var</span> <span class="nx">prevLeft</span> <span class="o">=</span> <span class="nx">$element</span><span class="p">.</span><span class="nx">offset</span><span class="p">().</span><span class="nx">left</span> <span class="o">-</span> <span class="nx">$screenshotCanvas</span><span class="p">.</span><span class="nx">data</span><span class="p">(</span><span class="dl">'</span><span class="s1">scrollLeft</span><span class="dl">'</span><span class="p">);</span>
+
+    <span class="kd">var</span> <span class="nx">ctx</span> <span class="o">=</span> <span class="nx">previewCanvas</span><span class="p">.</span><span class="nx">getContext</span><span class="p">(</span><span class="dl">"</span><span class="s2">2d</span><span class="dl">"</span><span class="p">);</span>
+    <span class="nx">ctx</span><span class="p">.</span><span class="nx">drawImage</span><span class="p">(</span><span class="nx">$screenshotCanvas</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nx">prevLeft</span><span class="p">,</span> <span class="nx">prevTop</span><span class="p">,</span>
+                                        <span class="nx">$element</span><span class="p">.</span><span class="nx">width</span><span class="p">(),</span> <span class="nx">$element</span><span class="p">.</span><span class="nx">height</span><span class="p">(),</span>
+                                        <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span>
+                                        <span class="nx">$element</span><span class="p">.</span><span class="nx">width</span><span class="p">(),</span> <span class="nx">$element</span><span class="p">.</span><span class="nx">height</span><span class="p">());</span>
+
+    <span class="k">return</span> <span class="nx">$</span><span class="p">(</span><span class="nx">previewCanvas</span><span class="p">)</span>
+                <span class="p">.</span><span class="nx">css</span><span class="p">({</span> <span class="na">border</span><span class="p">:</span><span class="dl">'</span><span class="s1">1px solid black</span><span class="dl">'</span> <span class="p">});</span>
+<span class="p">}</span></code></pre></figure>
+
+<p>We do three things:</p>
+
+<ol>
+  <li>Use the extension to capture a screenshot of the open tab, receiving a <code class="language-plaintext highlighter-rouge">data://</code> URL to the image and sending it to the content script.</li>
+  <li>In the content script, scale down the screenshot by drawing it to a canvas. The original image may be higher resolution than the actual window, so it needs to be scaled.</li>
+  <li>Crop out the portion of the screenshot canvas that we need onto another canvas, now containing our element.</li>
+</ol>
+
+<p>We add a listener in the background script of the extension. When a screenshot is requested, it will take a screenshot and send back the <code class="language-plaintext highlighter-rouge">data://</code> URL.</p>
+
+<p>Our content script will take two functions. One takes a screenshot of the page, and it accepts a callback argument after the screenshot has finished. When the screenshot is taken, we encode the current position of the window using jQuery’s <code class="language-plaintext highlighter-rouge">scrollLeft()</code> and <code class="language-plaintext highlighter-rouge">scrollTop()</code>.</p>
+
+<p>Our second function takes a jQuery element and returns a jQuery object referring to a canvas with the preview of that element. It computes the position of the element on the canvas. We use the version of <code class="language-plaintext highlighter-rouge">drawImage()</code> <a href="https://developer.mozilla.org/en-US/docs/HTML/Canvas/Tutorial/Using_images#Slicing">(docs)</a> with the most parameters.</p>
+
+<p>If this helped, feel free to leave and comment and let me know.</p>
+
+<h2 id="finished-product">Finished product</h2>
+
+<p>It’s up to you what you want to use the screenshots of the elements for, but here’s an example of what the screenshots would look like in click-and-cross:</p>
+
+<ul class="thumbnails" style="text-align: center;">
+    <li class="span3" style="display:inline-block; float: none;">
+    <a href="/images/chrome-nyt-plain.png" class="thumbnail">
+        <img src="/images/chrome-nyt-plain.png" alt="Diagram of the element that we want to capture relative to the screenshot" />
+    </a>
+    <div>A page with multiple links</div>
+    </li>
+    <li class="span3" style="display:inline-block; float: none;">
+    <a href="/images/chrome-nyt-cnx.png" class="thumbnail">
+        <img src="/images/chrome-nyt-cnx.png" alt="Diagram of the element that we want to capture relative to the screenshot" />
+    </a>
+    <div>Previews of nearby elements</div>
+    </li>
+
+</ul>
+</div>
+
+</article>
+
+	<div class="share">
+  <!--AddThis Button BEGIN -->
+  <div class="addthis_toolbox addthis_default_style addthis_32x32_style">
+    <a class="addthis_button_preferred_1"></a>
+    <a class="addthis_button_preferred_2"></a>
+    <a class="addthis_button_preferred_3"></a>
+    <a class="addthis_button_preferred_4"></a>
+    <a class="addthis_button_compact"></a>
+    <a class="addthis_counter addthis_bubble_style"></a>
+  </div>
+  <script type="text/javascript">var addthis_config = {"data_track_addressbar":true};</script>
+  <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-51e5a5762f46bbe9"></script>
+  <!-- AddThis Button END -->
+</div>
+
+
+
+<script async
+  src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- Github bottom leaderboard -->
+<ins class="adsbygoogle"
+       style="display:block"
+            data-ad-client="ca-pub-5225926150102880"
+                 data-ad-slot="1968553857"
+                      data-ad-format="auto"
+                           data-full-width-responsive="true"></ins>
+  <script>
+         (adsbygoogle = window.adsbygoogle || []).push({});
+  </script>
+
+
+<section id="comment">
+    <h1 class="title">Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+</section>
+
+</div>
+			</div>
+			<footer id="footer" class="inner"><p>
+  Copyright &copy; 2020 - Louis Li
+</p>
+
+Theme originally by <a href="http://shashankmehta.in/archive/2012/greyshade.html">Shashank Mehta</a>
+</footer>
+			<script src="/javascripts/slash.js"></script>
+<script src="/javascripts/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+	$('.fancybox').fancybox();
+})(jQuery);
+</script> <!-- Delete or comment this line to disable Fancybox -->
+
+
+<script type="text/javascript">
+      var disqus_shortname = 'llgithub';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://louisrli.github.io/blog/2013/01/16/javascript-canvas-screenshot/';
+        var disqus_url = 'http://louisrli.github.io/blog/2013/01/16/javascript-canvas-screenshot/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'https://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+	<script type="text/javascript">
+		var _gaq = _gaq || [];
+		_gaq.push(['_setAccount', 'UA-32823730-1']);
+		_gaq.push(['_trackPageview']);
+
+		(function() {
+			var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+			ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+			var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+		})();
+	</script>
+
+
+
+
+		</div>
+	</div>
+</body>
+</html>
